@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import "./index.css";
 import Dashboard from "./Dashboard/Dashboard/Dashboard";
+import Bagiya from "./Dashboard/Bagiya/Bagiya";
 
 function App() {
 
@@ -9,6 +10,7 @@ function App() {
     <>
       <Routes>
         <Route path="/dashboard" element={<Dashboard/>} />
+        <Route path="/bagiya" element={<Bagiya/>} />
       </Routes>
     </>
   );

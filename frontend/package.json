@@ -14,6 +14,8 @@
     "flowbite-react": "^0.10.2",
     "lucide-react": "^0.474.0",
     "react": "^18.3.1",
+    "react-circle-slider": "^1.6.2",
+    "react-countdown": "^2.3.6",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.4"
   },

@@ -38,14 +38,14 @@ export default function Sidebar() {
             <li>
               <a
                 href="/"
-                class="flex items-center ps-2.5 mb-5"
+                className="flex items-center ps-2.5 mb-5"
               >
                 <img
                   src={logo}
-                  class="h-6 me-3 sm:h-7"
+                  className="h-6 me-3 sm:h-7"
                   alt="Bagiya Logo"
                 />
-                <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">
+                <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">
                   Bagiya
                 </span>
               </a>
