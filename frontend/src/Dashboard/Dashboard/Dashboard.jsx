@@ -31,7 +31,6 @@ export default function Dashboard() {
     }
   };
 
-
   // Function to reset the countdown
   const resetTimer = () => {
     setStartCountdown(false); // Stop countdown
@@ -45,22 +44,22 @@ export default function Dashboard() {
       <Sidebar />
       <div className="p-8 sm:ml-64 bg-[#e5e7eb]">
         <div className=" rounded-lg dark:border-gray-700">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold ms-4">Dashboard</h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl text-gray-700 font-bold ms-2">Dashboard</h1>
             <div className="flex">
               <button
                 type="button"
                 className="bg-white rounded-lg p-2 m-1 flex"
               >
                 {" "}
-                <BadgeEuro /> 1270 coins
+                <BadgeEuro className="text-[#FFAA1D]" /> 1270 coins
               </button>
               <button
                 type="button"
                 className="bg-white rounded-lg p-2 m-1 flex"
               >
                 {" "}
-                <TreePine /> 12 trees planted
+                <TreePine className="text-[#22c55e]" /> 12 trees planted
               </button>
             </div>
           </div>
@@ -79,7 +78,7 @@ export default function Dashboard() {
                   </a>
                   <a
                     type="button"
-                    className="focus:outline-none text-white bg-[#85ce14] hover:bg-[#A2D240] focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-3 py-2 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
+                    className="focus:outline-none text-white bg-[#22c55e] hover:bg-[#16a34a] cursor-pointer focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-3 py-2 me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
                   >
                     Start Focus
                   </a>
@@ -93,8 +92,8 @@ export default function Dashboard() {
                   onChange={handleSliderChange}
                   size={250}
                   max={120} // Maximum 120 minutes
-                  gradientColorFrom="#85ce14"
-                  gradientColorTo="#A2D240"
+                  gradientColorFrom="#22c55e"
+                  gradientColorTo="#22c55e"
                   knobRadius={10}
                   circleWidth={20}
                 />
@@ -103,7 +102,7 @@ export default function Dashboard() {
                 <div className="absolute text-center">
                   {!startCountdown ? (
                     <div>
-                      <h2 className="text-[#85ce14] text-4xl font-bold">
+                      <h2 className="text-[#22c55e] text-4xl font-bold">
                         {value}
                       </h2>
                       <h2 className="text-2xl">Minutes</h2>
@@ -143,7 +142,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="bg-white rounded-lg p-8 mt-8">
-            <h2 className="text-xl text-gray-700 font-semibold my-6 ps-4">Recent Activities</h2>
+            <h2 className="text-xl text-gray-700 font-semibold my-6 ps-4">
+              Recent Activities
+            </h2>
             <div className="gap-4">
               <div className="flex justify-between items-center bg-gray-50 mb-4 p-4 rounded-lg">
                 <div className="flex items-center">
