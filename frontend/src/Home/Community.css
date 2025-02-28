@@ -1,0 +1,25 @@
+.bg-image {
+    /* The image used */
+    background-image: url("photographer.jpg");
+    
+    /* Add the blur effect */
+    filter: blur(2px);
+    -webkit-filter: blur(3px);
+    
+    /* Full height */
+    height: 100%; 
+    
+    /* Center and scale the image nicely */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+  
+  /* Position text in the middle of the page/image */
+  .bg-text {
+    color: white;
+    position: absolute;
+    z-index: 2;
+    margin-top: 20%;
+    text-align: center;
+  }
