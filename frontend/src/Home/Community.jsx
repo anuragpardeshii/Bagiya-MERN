@@ -27,7 +27,7 @@ function Community() {
           </div>
           <div className="relative text-white top-50 max-w-7xl mx-auto flex items-center flex-col justify-center">
             <h2 style={{ fontWeight: "700", fontSize: "3rem" }}>
-              Stay focused and plant real trees around the World
+              Stay focused and plant real trees around the World.
             </h2>
             <h1>
               <h4 style={{ fontWeight: "700", fontSize: "2.5rem" }}>
