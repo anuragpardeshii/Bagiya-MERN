@@ -6,6 +6,7 @@ import "flowbite/dist/flowbite.min.js";
 import Profile from "./Dashboard/Profile/Profile";
 import Friends from "./Dashboard/Friends/Friends";
 import Home from "./Home/Home";
+import Rankings from "./Dashboard/Rankings/Rankings";
 
 function App() {
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/dashboard/bagiya" element={<Bagiya/>} />
         <Route path="/dashboard/profile" element={<Profile/>} />
         <Route path="/dashboard/friends" element={<Friends/>} />
+        <Route path="/dashboard/rankings" element={<Rankings/>} />
       </Routes>
     </>
   );
