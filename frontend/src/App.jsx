@@ -7,6 +7,10 @@ import Profile from "./Dashboard/Profile/Profile";
 import Friends from "./Dashboard/Friends/Friends";
 import Home from "./Home/Home";
 import Rankings from "./Dashboard/Rankings/Rankings";
+import Login from "./Login/Login";
+import Signup from "./Signup/Signup";
+import NotFound from "./NotFound";
+import Times from "./Times";
 
 function App() {
 
@@ -20,6 +24,10 @@ function App() {
         <Route path="/dashboard/profile" element={<Profile/>} />
         <Route path="/dashboard/friends" element={<Friends/>} />
         <Route path="/dashboard/rankings" element={<Rankings/>} />
+        <Route path="/login" element={<Login/>} />
+        <Route path="/*" element={<NotFound/>} />
+        <Route path="/signup" element={<Signup/>} />
+        <Route path="/timer" element={<Times/>} />
       </Routes>
     </>
   );
