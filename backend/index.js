@@ -2,21 +2,45 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
+const session = require("express-session");
 const authRoutes = require("./routes/authRoutes.js");
+const morgan = require('morgan');
 
 dotenv.config();
 const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+const corsOptions = {
+  origin: "http://localhost:5173", // Allow requests from frontend
+  credentials: true, // Allow cookies & authentication headers
+};
+
+app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use(morgan('dev')); 
+
+// Session Configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_secret_key_here", // Provide a strong secret
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      cookie: { secure: false, httpOnly: true },
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    },
+  })
+);
 
 // Routes
 app.use("/api/auth", authRoutes);
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log(err));
 
