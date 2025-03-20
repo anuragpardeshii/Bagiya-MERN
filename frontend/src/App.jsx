@@ -10,25 +10,27 @@ import Rankings from "./Dashboard/Rankings/Rankings";
 import Login from "./Login/Login";
 import Signup from "./Signup/Signup";
 import NotFound from "./NotFound";
+import { AuthProvider } from "./Dashboard/context/AuthContext";
 import Times from "./Times";
+import ProtectedRoute from "./Dashboard/context/ProtectedRoute"; 
 
 function App() {
-
-
   return (
     <>
-      <Routes>
-      <Route path="/" element={<Home/>} />
-        <Route path="/dashboard" element={<Dashboard/>} />
-        <Route path="/dashboard/bagiya" element={<Bagiya/>} />
-        <Route path="/dashboard/profile" element={<Profile/>} />
-        <Route path="/dashboard/friends" element={<Friends/>} />
-        <Route path="/dashboard/rankings" element={<Rankings/>} />
-        <Route path="/login" element={<Login/>} />
-        <Route path="/*" element={<NotFound/>} />
-        <Route path="/signup" element={<Signup/>} />
-        <Route path="/timer" element={<Times/>} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+        <Route path="/dashboard/bagiya" element={<ProtectedRoute element={<Bagiya />} />} />
+        <Route path="/dashboard/profile" element={<ProtectedRoute element={<Profile />} />} />
+        <Route path="/dashboard/friends" element={<ProtectedRoute element={<Friends />} />} />
+        <Route path="/dashboard/rankings" element={<ProtectedRoute element={<Rankings />} />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/*" element={<NotFound />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/timer" element={<ProtectedRoute element={<Times />} />}/>
+        </Routes>
+      </AuthProvider>
     </>
   );
 }
