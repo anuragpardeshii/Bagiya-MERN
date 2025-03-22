@@ -58,7 +58,7 @@ const login = async (req, res) => {
     }
 
     // Store user session
-    req.session.user = { id: user._id, name: user.name, email: user.email };
+    req.session.user = { id: user._id, name: user.name, email: user.email, createdAt: user.createdAt, username: user.username, phone: user.phone, updatedAt: user.updatedAt };
 
     res.cookie("auth", "true", {
       httpOnly: true,
@@ -75,11 +75,13 @@ const login = async (req, res) => {
 
 // Check Authentication Controller
 const checkAuth = (req, res) => {
-  if (!req.session.user) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  res.json(req.session.user);
-};
+    console.log("Session data:", req.session); // Debugging step
+    if (!req.session.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    res.json(req.session.user);
+  };
+  
 
 // Logout Controller
 const logout = (req, res) => {

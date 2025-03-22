@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     profilePicture: { type: String },
     wallet: {
       balance: { type: Number, default: 0 }, // User's coin balance
+      trees: { type: Number, default: 0 }, // trees planted
       transactions: [
         { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
       ],
