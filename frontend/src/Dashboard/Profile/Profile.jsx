@@ -1,8 +1,56 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { UserPen } from "lucide-react";
 import Sidebar from "../Sidebar";
+import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function Profile() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState(null);
+  const [trees, setTrees] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isMounted = true; // ✅ Track if the component is still mounted
+    const fetchBalance = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:3000/api/users/balance/${user.id}`,
+          { signal: controller.signal }
+        );
+
+        if (isMounted) {
+          setBalance(response.data.balance);
+          setTrees(response.data.trees);
+        }
+      } catch (err) {
+        if (axios.isCancel(err)) {
+          // console.log("✅ Request was canceled by cleanup.");
+        } else {
+          // console.error("❌ Failed to fetch balance:", err);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchBalance();
+
+    return () => {
+      isMounted = false; // ✅ Prevent state update after unmount
+      controller.abort(); // ✅ Cleanup
+    };
+  }, [user?.id]);
+  const date = new Date(user.createdAt);
+const formattedDate = `Joined on: ${ date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} Time: ${date.getHours()}:${date.getMinutes()}`;
+
+
   return (
     <>
       <Sidebar />
@@ -36,9 +84,11 @@ export default function Profile() {
                   className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg"
                 />
                 <div>
-                  <p className="text-lg sm:text-xl font-medium">Anurag Pardeshi</p>
+                  <p className="text-lg sm:text-xl font-medium">
+                    {user.name}
+                  </p>
                   <p className="text-sm sm:text-base text-gray-600">
-                    Member since 21 January 2025
+                    {formattedDate}
                   </p>
                 </div>
               </div>
@@ -63,9 +113,9 @@ export default function Profile() {
                   </label>
                   <input
                     type="text"
+                    value={user.name}
                     id="full_name"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="Anurag Pardeshi"
                     required
                   />
                 </div>
@@ -80,7 +130,7 @@ export default function Profile() {
                     type="text"
                     id="username"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="anuragpardeshi"
+                    value={user.username}
                     required
                   />
                 </div>
@@ -122,7 +172,7 @@ export default function Profile() {
                     type="tel"
                     id="phone"
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
-                    placeholder="123-45-678"
+                    value={user.phone}
                     pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}"
                     required
                   />
@@ -140,6 +190,7 @@ export default function Profile() {
                   id="email"
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                   placeholder="john.doe@company.com"
+                  value={user.email}
                   required
                 />
               </div>
@@ -153,6 +204,7 @@ export default function Profile() {
                 <textarea
                   id="bio"
                   rows="4"
+                  value={user.bio}
                   className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Write your thoughts here..."
                 ></textarea>
@@ -181,7 +233,11 @@ export default function Profile() {
                 </div>
                 <div className="flex justify-between">
                   <p className="text-gray-600">Trees Planted</p>
-                  <p className="text-gray-800 font-bold">24 trees</p>
+                  <p className="text-gray-800 font-bold">{trees? trees: 0} trees</p>
+                </div>
+                <div className="flex justify-between">
+                  <p className="text-gray-600">Coins:</p>
+                  <p className="text-gray-800 font-bold">{balance}</p>
                 </div>
                 <div className="flex justify-between">
                   <p className="text-gray-600">Success Rate</p>

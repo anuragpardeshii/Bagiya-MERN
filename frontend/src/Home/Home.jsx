@@ -17,7 +17,7 @@ export default function Home() {
               The Greenest way to focus
             </h1>
 
-            <button className="p-[3px] block mx-auto md:hidden relative hover:scale-105 ">
+            <button className="p-[3px] block mx-auto md:hidden relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#85ce14] to-[#366827] rounded-lg" />
               <div className="px-8 py-2 bg-white rounded-[6px]  relative group transition duration-200 text-black [#366827] font-bold">
                 Get Started
@@ -61,7 +61,10 @@ export default function Home() {
 
       {/* How it works */}
 
-      <section id="about" class="bg-white dark:bg-white border-b border-gray-100 [#366827]">
+      <section
+        id="about"
+        class="bg-white dark:bg-white border-b border-gray-100 [#366827]"
+      >
         <div class="py-8 px-4 mx-auto max-w-screen-xl text-center lg:py-16">
           <h1 class="mb-4 text-4xl font-extrabold tracking-tight leading-none text-gray-900 md:text-5xl lg:text-6xl dark:text-black">
             We invest in a greener future.
@@ -104,7 +107,7 @@ export default function Home() {
             </div>
           </div>
           <div class="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0">
-            <button className="p-[3px] relative hover:scale-105 ">
+            <button className="p-[3px] relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#85ce14] to-[#366827] rounded-lg" />
               <div className="px-8 py-2 bg-white rounded-[6px]  relative group transition duration-200 text-black [#366827] font-bold">
                 Get Started
@@ -621,8 +624,11 @@ export default function Home() {
           <div className="py-12 grid grid-cols-1 md:grid-cols-4 gap-8 border-b border-neutral-800">
             <div className="col-span-1 md:col-span-2">
               <h3 className="text-2xl font-bold mb-4">Bagiya</h3>
-              <p className="text-neutral-400 mb-6">
-              The Greenest way to focus
+              <p className="text-neutral-400 mb-6 max-w-lg">
+                Nurture your plants with ease! Bagiya helps gardening
+                enthusiasts track growth, manage watering schedules, and monitor
+                plant health - all in one place. Whether you're a home gardener or
+                a nursery owner, grow smarter with Bagiya.
               </p>
               <div className="flex gap-4">
                 <a
@@ -692,35 +698,35 @@ export default function Home() {
             <div>
               <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2">
-  {[
-    { name: "Home", id: "home" },
-    { name: "About", id: "about" },
-    { name: "Benefits", id: "benefits" },
-    { name: "Testimonials", id: "testimonials" },
-    { name: "Community", id: "community" }
-  ].map((item) => (
-    <li key={item.id}>
-      <a
-        href={`#${item.id}`}
-        onClick={(e) => {
-          e.preventDefault();
-          document
-            .getElementById(item.id)
-            ?.scrollIntoView({ behavior: "smooth" });
-        }}
-        className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#366827] md:p-0 md:dark:hover:text-[#366827] dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
-      >
-        {item.name} {/* Fixed: Use item.name instead of item.label */}
-      </a>
-    </li>
-  ))}
-</ul>
-
+                {[
+                  { name: "Home", id: "home" },
+                  { name: "About", id: "about" },
+                  { name: "Benefits", id: "benefits" },
+                  { name: "Testimonials", id: "testimonials" },
+                  { name: "Community", id: "community" },
+                ].map((item) => (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document
+                          .getElementById(item.id)
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="block py-2 px-3 text-gray-900 rounded-sm hover:bg-gray-100 md:hover:bg-transparent md:hover:text-[#366827] md:p-0 md:dark:hover:text-[#366827] dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                    >
+                      {item.name}{" "}
+                      {/* Fixed: Use item.name instead of item.label */}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
             <div>
               <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
               <ul className="space-y-2">
-              <li className="flex items-center gap-2 text-neutral-400 overflow-hidden truncate sm:w-auto">
+                <li className="flex items-center gap-2 text-neutral-400 overflow-hidden truncate sm:w-auto">
                   <svg
                     className="w-6 h-6 text-gray-800 dark:text-white"
                     aria-hidden="true"
@@ -792,7 +798,13 @@ export default function Home() {
           <div className="py-6 flex flex-col md:flex-row text-center justify-between items-center">
             <p className="text-neutral-400 text-sm mb-4 md:mb-0 mx-auto">
               {" "}
-              © 2024 <span><a href="https://www.linkedin.com/in/pardeshianurag22/">Anurag Pardeshi</a></span>. All rights reserved.{" "}
+              © 2024{" "}
+              <span>
+                <a href="https://www.linkedin.com/in/pardeshianurag22/">
+                  Anurag Pardeshi
+                </a>
+              </span>
+              . All rights reserved.{" "}
             </p>
             {/* <div className="flex gap-6 text-sm">
               <a

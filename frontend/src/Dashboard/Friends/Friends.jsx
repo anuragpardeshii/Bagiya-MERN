@@ -4,7 +4,6 @@ import Sidebar from "../Sidebar";
 
 export default function Friends() {
   const [dropdownVisible, setDropdownVisible] = useState(null);
-
   const toggleDropdown = (id) => {
     setDropdownVisible(dropdownVisible === id ? null : id);
   };
@@ -13,7 +12,7 @@ export default function Friends() {
     <>
       <Sidebar />
       <div className="p-4 sm:p-8 sm:ml-64 bg-[#e5e7eb] min-h-screen">
-        <div className="rounded-lg dark:border-gray-700">
+        <div className="rounded-lg">
           <div className="flex flex-wrap justify-between items-center pb-4 sm:pb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl text-gray-700 font-bold">
@@ -24,7 +23,7 @@ export default function Friends() {
               <form className="max-w-xl gap-4 my-2 mx-auto">
                 <label
                   htmlFor="default-search"
-                  className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
+                  className="mb-2 text-sm font-medium text-gray-900 sr-only"
                 >
                   Search
                 </label>
@@ -32,16 +31,16 @@ export default function Friends() {
                   <input
                     type="search"
                     id="default-search"
-                    className="block w-full p-4 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    className="block w-full p-4 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Search friends by username..."
                     required
                   />
                   <button
                     type="submit"
-                    className="text-white absolute end-2.5 bottom-2.5 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm bg-gray-50 px-2 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                    className="text-white absolute end-2.5 bottom-2.5 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm bg-gray-50 px-2 py-2"
                   >
                     <svg
-                      className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                      className="w-4 h-4 text-gray-500"
                       aria-hidden="true"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -83,7 +82,7 @@ export default function Friends() {
                     </div>
                     <button
                       type="button"
-                      className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                      className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5 focus:outline-none"
                     >
                       Add Friend
                     </button>
@@ -113,7 +112,7 @@ export default function Friends() {
                     </div>
                     <button
                       onClick={() => toggleDropdown(id)}
-                      className="inline-flex items-center p-2 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none dark:text-white focus:ring-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-600"
+                      className="inline-flex items-center p-2 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-50"
                       type="button"
                     >
                       <svg
@@ -127,21 +126,21 @@ export default function Friends() {
                       </svg>
                     </button>
                     {dropdownVisible === id && (
-                      <div className="z-10 absolute bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44 dark:bg-gray-700 dark:divide-gray-600">
+                      <div className="z-10 absolute bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44">
                         <ul
-                          className="py-2 text-sm text-gray-700 dark:text-gray-200"
+                          className="py-2 text-sm text-gray-700"
                           aria-labelledby="dropdownMenuIconHorizontalButton"
                         >
                           <li>
                             <button
-                              className="block flex px-4 font-bold py-2 text-md text-red-600 items-center hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                              className="block flex px-4 font-bold py-2 text-md text-red-600 items-center hover:bg-gray-100"
                             >
                               <Trash2 className="w-5 mx-1" /> Remove Friend
                             </button>
                           </li>
                           <li>
                             <button
-                              className="block flex items-center px-4 py-2 font-medium text-md text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                              className="block flex items-center px-4 py-2 font-medium text-md text-blue-400 hover:bg-gray-100"
                             >
                               <Info className="w-5 mx-1" />
                               About
