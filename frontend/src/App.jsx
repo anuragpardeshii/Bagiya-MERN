@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./index.css";
 import Dashboard from "./Dashboard/Dashboard/Dashboard";
 import Bagiya from "./Dashboard/Bagiya/Bagiya";
@@ -12,23 +12,52 @@ import Signup from "./Signup/Signup";
 import NotFound from "./NotFound";
 import { AuthProvider } from "./Dashboard/context/AuthContext";
 import Times from "./Times";
-import ProtectedRoute from "./Dashboard/context/ProtectedRoute"; 
+import ProtectedRoute from "./Dashboard/context/ProtectedRoute";
 
 function App() {
   return (
     <>
+      {/* Public Routes */}
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+
+      {/* Private Routes inside AuthProvider */}
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
-        <Route path="/dashboard/bagiya" element={<ProtectedRoute element={<Bagiya />} />} />
-        <Route path="/dashboard/profile" element={<ProtectedRoute element={<Profile />} />} />
-        <Route path="/dashboard/friends" element={<ProtectedRoute element={<Friends />} />} />
-        <Route path="/dashboard/rankings" element={<ProtectedRoute element={<Rankings />} />} />
-          <Route path="/login" element={<Login />} />
+          <Route
+            path="/signup"
+            element={<ProtectedRoute element={<Signup />} />}
+          />
+          <Route
+            path="/login"
+            element={<ProtectedRoute element={<Login />} />}
+          />
+          <Route
+            path="/dashboard"
+            element={<ProtectedRoute element={<Dashboard />} />}
+          />
+          <Route
+            path="/dashboard/bagiya"
+            element={<ProtectedRoute element={<Bagiya />} />}
+          />
+          <Route
+            path="/dashboard/profile"
+            element={<ProtectedRoute element={<Profile />} />}
+          />
+          <Route
+            path="/dashboard/friends"
+            element={<ProtectedRoute element={<Friends />} />}
+          />
+          <Route
+            path="/dashboard/rankings"
+            element={<ProtectedRoute element={<Rankings />} />}
+          />
+          <Route
+            path="/timer"
+            element={<ProtectedRoute element={<Times />} />}
+          />
           <Route path="/*" element={<NotFound />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/timer" element={<ProtectedRoute element={<Times />} />}/>
         </Routes>
       </AuthProvider>
     </>

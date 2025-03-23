@@ -1,6 +1,7 @@
 import React from "react";
 import Community from "./Community";
 import Navbar from "./Navbar";
+import { Link } from "react-router-dom";
 
 export default function Home() {
   return (
@@ -19,9 +20,12 @@ export default function Home() {
 
             <button className="p-[3px] block mx-auto md:hidden relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#85ce14] to-[#366827] rounded-lg" />
-              <div className="px-8 py-2 bg-white rounded-[6px]  relative group transition duration-200 text-black [#366827] font-bold">
+              <a
+                href="/dashboard"
+                className="px-8 my-2 bg-white rounded-[6px]  relative group transition duration-200 text-black [#366827] font-bold"
+              >
                 Get Started
-              </div>
+              </a>
             </button>
             <div className="flex justify-center flex-wrap gap-4">
               <a href="/dashboard" target="_blank" rel="noopener noreferrer">
@@ -109,9 +113,13 @@ export default function Home() {
           <div class="flex flex-col space-y-4 sm:flex-row sm:justify-center sm:space-y-0">
             <button className="p-[3px] relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#85ce14] to-[#366827] rounded-lg" />
-              <div className="px-8 py-2 bg-white rounded-[6px]  relative group transition duration-200 text-black [#366827] font-bold">
+
+              <Link
+                to="/dashboard"
+                className="px-8 my-4 bg-white rounded-[6px] relative group transition duration-200 text-black font-bold"
+              >
                 Get Started
-              </div>
+              </Link>
             </button>
           </div>
         </div>
@@ -627,8 +635,8 @@ export default function Home() {
               <p className="text-neutral-400 mb-6 max-w-lg">
                 Nurture your plants with ease! Bagiya helps gardening
                 enthusiasts track growth, manage watering schedules, and monitor
-                plant health - all in one place. Whether you're a home gardener or
-                a nursery owner, grow smarter with Bagiya.
+                plant health - all in one place. Whether you're a home gardener
+                or a nursery owner, grow smarter with Bagiya.
               </p>
               <div className="flex gap-4">
                 <a

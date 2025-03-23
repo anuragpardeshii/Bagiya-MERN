@@ -2,6 +2,8 @@ import React from "react";
 import logo from "/src/assets/Images/logo.png";
 import "flowbite";
 import axios from "axios";
+import "flowbite";
+
 
 export default function Sidebar() {
   const handleLogout = async () => {

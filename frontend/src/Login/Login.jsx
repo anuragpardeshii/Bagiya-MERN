@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useAuth } from "../Dashboard/context/AuthContext";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -10,6 +11,12 @@ export default function Login() {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const { user } = useAuth();
+
+  if (user) {
+    window.location.href = "/timer";
+  }
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -28,7 +35,7 @@ export default function Login() {
 
       console.log("Login Successful:", response.data);
       alert("Login Successful!");
-      window.location.href = "/dashboard"; // Redirect after login
+      window.location.href = "/timer"; // Redirect after login
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Try again.");
     } finally {

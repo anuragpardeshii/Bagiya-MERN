@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes.js");
 const transactionRoutes = require("./routes/transactionRoutes.js");
 const userRoutes = require("./routes/userRoutes.js");
 const morgan = require('morgan');
+const sessionRoutes = require("./routes/sessionRoutes.js");
 
 dotenv.config();
 const app = express();
@@ -15,7 +16,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 const corsOptions = {
-  origin: "http://localhost:5174", // Allow requests from frontend
+  origin: "http://localhost:5173", // Allow requests from frontend
   credentials: true, // Allow cookies & authentication headers
 };
 
@@ -41,6 +42,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 // Connect to MongoDB
 mongoose

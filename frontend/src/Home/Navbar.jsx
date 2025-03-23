@@ -65,12 +65,12 @@ const Navbar = () => {
           </span>
         </a>
         <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
-          <a to="/dashboard" type="button" className="p-[3px] block mx-auto relative">
+          <Link to="/dashboard" type="button" className="p-[3px] block mx-auto relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#85ce14] to-[#366827] rounded-lg" />
-              <div className="px-4 py-1 bg-white rounded-[6px]  relative group transition duration-200 text-[#366827] [#366827] font-bold">
+              <a href="/dashboard" className="px-4 my-1 bg-white rounded-[6px]  relative group transition duration-200 text-[#366827] [#366827] font-bold">
                 Get Started
-              </div>
-            </a>
+              </a>
+            </Link>
         </div>
         <div className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1">
           <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-white md:dark:bg-white dark:border-gray-700">
