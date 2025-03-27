@@ -20,19 +20,13 @@ function App() {
       {/* Public Routes */}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
 
       {/* Private Routes inside AuthProvider */}
       <AuthProvider>
         <Routes>
-          <Route
-            path="/signup"
-            element={<ProtectedRoute element={<Signup />} />}
-          />
-          <Route
-            path="/login"
-            element={<ProtectedRoute element={<Login />} />}
-          />
           <Route
             path="/dashboard"
             element={<ProtectedRoute element={<Dashboard />} />}
@@ -57,9 +51,13 @@ function App() {
             path="/timer"
             element={<ProtectedRoute element={<Times />} />}
           />
-          <Route path="/*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
+
+      {/* Catch-All Route (Not Found) */}
+      <Routes>
+        <Route path="/*" element={<NotFound />} />
+      </Routes>
     </>
   );
 }
