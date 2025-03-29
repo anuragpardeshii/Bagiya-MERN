@@ -12,12 +12,6 @@ export default function Login() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const { user } = useAuth();
-
-  if (user) {
-    window.location.href = "/timer";
-  }
-
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -5,95 +5,101 @@ import { Link } from "react-router-dom";
 import { useAuth } from "./Dashboard/context/AuthContext";
 
 const images = [
-  "https://images.unsplash.com/photo-1469474968028-56623f02e42e",
-  "https://images.unsplash.com/photo-1426604966848-d7adac402bff",
-  "https://images.unsplash.com/photo-1472214103451-9374bd1c798e",
+  "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176196/progress1_ifeprk.png",
+  "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176196/progress2_jtq5g2.png",
+  "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176196/progress3_zbcsja.png",
+  "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress4_t71esn.png",
+  "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress6_vy9mwi.png",
+  "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress7_t2bts0.png",
 ];
 
 function Timer() {
   const { user } = useAuth();
   const [value, setValue] = useState(1);
-  const [startCountdown, setStartCountdown] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [startTime, setStartTime] = useState(null);
+  const [intervalId, setIntervalId] = useState(null);
+  const [fade, setFade] = useState(true);
 
-  const handleSliderChange = (newValue) => {
-    setValue(newValue);
-  };
+  const handleSliderChange = (newValue) => setValue(newValue);
 
   const startTimer = () => {
     setTimeLeft(value * 60 * 1000);
-    setStartCountdown(true);
     setStartTime(new Date());
   };
 
   const endSession = async (success) => {
     if (!user || !startTime) return;
-
-    const sessionData = {
-      userId: user.id,
-      sessionTime: value,
-      sessionSuccess: success,
-      startTime,
-      endTime: new Date(),
-    };
-
     try {
-      const response = await fetch(
-        "http://localhost:3000/api/sessions/create",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(sessionData),
-        }
-      );
-      const result = await response.json();
-      console.log("Session saved:", result);
+      await fetch("http://localhost:3000/api/sessions/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          sessionTime: value,
+          sessionSuccess: success,
+          startTime,
+          endTime: new Date(),
+        }),
+      });
     } catch (error) {
       console.error("Error saving session:", error);
     }
   };
 
   useEffect(() => {
-    if (startCountdown && timeLeft > 0) {
-      const interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          const newTime = prevTime - 1000;
-          if (newTime > 0 && newTime % 25000 === 0) {
-            setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    if (timeLeft > 0) {
+      const id = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1000) {
+            clearInterval(id);
+            endSession(true);
+            return 0;
           }
-          return newTime;
+
+          if ((prev / 1000) % 25 === 0) {
+            setFade(false);
+            setTimeout(() => {
+              setCurrentImageIndex(
+                (prevIndex) => (prevIndex + 1) % images.length
+              );
+              setFade(true);
+            }, 300);
+          }
+          return prev - 1000;
         });
       }, 1000);
-      return () => clearInterval(interval);
-    } else if (timeLeft <= 0 && startCountdown) {
-      setStartCountdown(false);
-      endSession(true);
-      alert("Time's up!");
+
+      setIntervalId(id);
+      return () => clearInterval(id);
     }
-  }, [startCountdown, timeLeft]);
+  }, [timeLeft]);
 
   const confirmGiveUp = () => {
-    setStartCountdown(false);
+    clearInterval(intervalId);
+    setTimeLeft(0);
     setShowModal(false);
     endSession(false);
     setValue(1);
   };
 
   return (
-    <div className="min-h-screen flex-col bg-gray-100 flex items-center justify-center">
+    <div className="min-h-screen flex flex-col bg-gray-100 items-center justify-center">
       <div className="m-4">
-        <Link
-          to="/dashboard"
-          className="mt-8 flex w-full gap-2 bg-[#22c55e] text-white py-2 px-4 rounded-lg hover:bg-[#1ea34b]"
-        >
-          <p className="text-xl font-semibold">Dashboard</p>
-        </Link>
+        {timeLeft === 0 && (
+          <Link
+            to="/dashboard"
+            className="mt-8 flex w-full gap-2 bg-[#22c55e] text-white py-2 px-4 rounded-lg hover:bg-[#1ea34b] transition"
+          >
+            <p className="text-xl font-semibold">Dashboard</p>
+          </Link>
+        )}
       </div>
+
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
-        {!startCountdown ? (
+        {!timeLeft ? (
           <>
             <h1 className="text-2xl font-bold text-center mb-6">
               Set Your Timer
@@ -117,29 +123,36 @@ function Timer() {
             </div>
             <button
               onClick={startTimer}
-              className="mt-8 w-full bg-[#22c55e] text-white py-2 px-4 rounded-lg hover:bg-[#1ea34b]"
+              className="mt-8 w-full bg-[#22c55e] text-white py-2 px-4 rounded-lg hover:bg-[#1ea34b] transition"
             >
               Start Timer
             </button>
           </>
         ) : (
           <div className="space-y-4">
+            <div className="z-[100] mb-4 bg-opacity-40 flex items-center justify-center">
+              <span className="text-black hover:opacity-100 text-2xl font-semibold">
+                {/* Time Left: &nbsp; */}
+                {Math.floor(timeLeft / 60000)}:
+                {String(((timeLeft % 60000) / 1000).toFixed(0)).padStart(
+                  2,
+                  "0"
+                )}
+              </span>
+            </div>
             <div className="relative h-64 w-full rounded-lg overflow-hidden">
               <img
                 src={images[currentImageIndex]}
                 alt="Timer background"
-                className="absolute inset-0 w-full h-full object-cover"
+                className={`absolute inset-0 pb-2 mx-auto h-full object-cover transition-opacity duration-500 ease-in-out ${
+                  fade ? "opacity-100" : "opacity-0"
+                }`}
+                style={{ borderRadius: "25rem" }}
               />
-              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                <span className="text-white text-6xl font-bold">
-                  {Math.floor(timeLeft / 60000)}:
-                  {((timeLeft % 60000) / 1000).toFixed(0).padStart(2, "0")}
-                </span>
-              </div>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600"
+              className="w-full bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition"
             >
               Give Up
             </button>

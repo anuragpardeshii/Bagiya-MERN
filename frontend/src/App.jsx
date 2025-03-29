@@ -16,49 +16,40 @@ import ProtectedRoute from "./Dashboard/context/ProtectedRoute";
 
 function App() {
   return (
-    <>
-      {/* Public Routes */}
+    <AuthProvider>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-      </Routes>
 
-      {/* Private Routes inside AuthProvider */}
-      <AuthProvider>
-        <Routes>
-          <Route
-            path="/dashboard"
-            element={<ProtectedRoute element={<Dashboard />} />}
-          />
-          <Route
-            path="/dashboard/bagiya"
-            element={<ProtectedRoute element={<Bagiya />} />}
-          />
-          <Route
-            path="/dashboard/profile"
-            element={<ProtectedRoute element={<Profile />} />}
-          />
-          <Route
-            path="/dashboard/friends"
-            element={<ProtectedRoute element={<Friends />} />}
-          />
-          <Route
-            path="/dashboard/rankings"
-            element={<ProtectedRoute element={<Rankings />} />}
-          />
-          <Route
-            path="/timer"
-            element={<ProtectedRoute element={<Times />} />}
-          />
-        </Routes>
-      </AuthProvider>
+        {/* Private Routes */}
+        <Route
+          path="/dashboard"
+          element={<ProtectedRoute element={<Dashboard />} />}
+        />
+        <Route
+          path="/dashboard/bagiya"
+          element={<ProtectedRoute element={<Bagiya />} />}
+        />
+        <Route
+          path="/dashboard/profile"
+          element={<ProtectedRoute element={<Profile />} />}
+        />
+        <Route
+          path="/dashboard/friends"
+          element={<ProtectedRoute element={<Friends />} />}
+        />
+        <Route
+          path="/dashboard/rankings"
+          element={<ProtectedRoute element={<Rankings />} />}
+        />
+        <Route path="/timer" element={<ProtectedRoute element={<Times />} />} />
 
-      {/* Catch-All Route (Not Found) */}
-      <Routes>
-        <Route path="/*" element={<NotFound />} />
+        {/* Catch-All Route (Must be Last) */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </AuthProvider>
   );
 }
 
