@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true }, // String for better compatibility
     password: { type: String, required: true },
     profilePicture: { type: String },
+    bio: { type: String },
+    dob: { type: Date },
     wallet: {
       balance: { type: Number, default: 0 }, // User's coin balance
       trees: { type: Number, default: 0 }, // trees planted
