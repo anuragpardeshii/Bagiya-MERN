@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
+import LoadingScreen from "../../components/LoadingScreen";
 
 const Hours = ({ userId }) => {
   const [hourlyData, setHourlyData] = useState([]);
@@ -55,12 +56,12 @@ const Hours = ({ userId }) => {
       });
   }, [userId]);
 
-  if (isLoading) return <div className="p-6">Loading...</div>;
+  if (isLoading) return <LoadingScreen />;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
-    <div className="w-full px-2 sm:px-0">
-      <div className="relative flex flex-col">
+    <div className="w-full flex-1 px-2 sm:px-0 h-full">
+      <div className="relative w-full flex-1 flex flex-col w-full h-full">
         <h2 className="text-xl text-gray-700 font-bold mb-4">
           24-Hour Focus Analysis
         </h2>
@@ -76,7 +77,7 @@ const Hours = ({ userId }) => {
         {hourlyData.length > 0 && (
           <div 
             ref={chartContainerRef}
-            className="w-auto overflow-x-auto sm:overflow-hidden"
+            className="w-full overflow-x-auto sm:overflow-hidden"
           >
             <div className="min-w-[320px] w-full h-[350px] sm:h-[400px]">
               <LineChart

@@ -1,11 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useAuth } from "../Dashboard/context/AuthContext";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/api/auth/check-auth", {
+          withCredentials: true
+        });
+        
+        if (response.status === 200) {
+          navigate("/timer");
+        }
+      } catch (error) {
+        console.log("User not authenticated");
+      }
+    };
+    
+    checkAuthStatus();
+  }, [navigate]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -28,8 +49,8 @@ export default function Login() {
       );
 
       console.log("Login Successful:", response.data);
-      alert("Login Successful!");
-      window.location.href = "/timer"; // Redirect after login
+      toast.success("Login successful!");
+      navigate("/timer"); // Use navigate instead of window.location
     } catch (err) {
       setError(err.response?.data?.message || "Login failed. Try again.");
     } finally {

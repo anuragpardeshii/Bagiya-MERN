@@ -67,9 +67,9 @@ const Navbar = () => {
         <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
           <Link to="/dashboard" type="button" className="p-[3px] block mx-auto relative">
               <div className="absolute inset-0 bg-gradient-to-r from-[#85ce14] to-[#366827] rounded-lg" />
-              <a href="/dashboard" className="px-4 my-1 bg-white rounded-[6px]  relative group transition duration-200 text-[#366827] [#366827] font-bold">
+              <p className="px-4  bg-white rounded-[6px]  relative group transition duration-200 text-[#366827] [#366827] font-bold">
                 Get Started
-              </a>
+              </p>
             </Link>
         </div>
         <div className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1">

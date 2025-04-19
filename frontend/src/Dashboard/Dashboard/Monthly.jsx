@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
 import moment from "moment";
+import LoadingScreen from "../../components/LoadingScreen";
 
 const Monthly = ({ userId }) => {
   const [monthlyData, setMonthlyData] = useState([]);

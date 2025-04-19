@@ -1,88 +1,84 @@
 import React, { useEffect, useState } from "react";
 import { UserPen, Upload, Save, X } from "lucide-react";
-import Sidebar from "../Sidebar";
-import axios from "axios";
-import { useAuth } from "../context/AuthContext";
 import { toast } from "react-hot-toast";
+import Sidebar from "../Sidebar";
+import { useAuth } from "../context/AuthContext";
+import axios from "axios";
 
 export default function Profile() {
-  const { user, setUser } = useAuth();
+  const { user: authUser } = useAuth(); // Get user from auth context
+  const userId = authUser?._id || authUser?.id; // Extract user ID, handling both _id and id formats
+  const [user, setUser] = useState(null); 
   const [loading, setLoading] = useState(true);
-  const [balance, setBalance] = useState(null);
-  const [trees, setTrees] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [trees, setTrees] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Initialize form data state
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    username: user?.username || "",
-    phone: user?.phone || "",
-    email: user?.email || "",
-    bio: user?.bio || "",
-    dob: user?.dob || "",
+    name: "",
+    username: "",
+    phone: "",
+    email: "",
+    bio: "",
+    dob: "",
   });
+
   const [profilePicture, setProfilePicture] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(user?.profilePicture || "/avatar.png");
+  const [previewUrl, setPreviewUrl] = useState("/avatar.png");
 
+  // Fetch user data when component mounts
   useEffect(() => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    let isMounted = true;
-
-    const fetchData = async () => {
+    if (!userId) return; // Return early if no userId
+    
+    const getUser = async () => {
       try {
         setLoading(true);
-        const [balanceResponse, userResponse] = await Promise.all([
-          axios.get(`http://localhost:3000/api/users/balance/${user.id}`, {
-            signal: controller.signal,
-          }),
-          axios.get(`http://localhost:3000/api/users/${user.id}`, {
-            signal: controller.signal,
-          }),
-        ]);
-
-        if (isMounted) {
-          setBalance(balanceResponse.data.balance);
-          setTrees(balanceResponse.data.trees);
+        const response = await axios.get(`http://localhost:3000/api/users/${userId}`);
+        
+        if (response.status === 200 || response.status === 202) {
+          const userData = response.data.user;
+          console.log("Fetched user data:", userData); // Add this to debug
+          setUser(userData);
           
-          const userData = userResponse.data;
-          setFormData(prevData => ({
-            ...prevData,
-            name: userData.name || prevData.name,
-            username: userData.username || prevData.username,
-            phone: userData.phone || prevData.phone,
-            email: userData.email || prevData.email,
-            bio: userData.bio || prevData.bio,
-            dob: userData.dob || prevData.dob,
-          }));
-          setPreviewUrl(userData.profilePicture || "/avatar.png");
+          // Update form data with user data
+          setFormData({
+            name: userData.name || "",
+            username: userData.username || "",
+            phone: userData.phone || "",
+            email: userData.email || "",
+            bio: userData.bio || "",
+            dob: userData.dob || "",
+          });
+          
+          // Set preview URL if profile picture exists
+          if (userData.profilePicture) {
+            setPreviewUrl(userData.profilePicture);
+          }
+          
+          // Set balance and trees
+          setBalance(userData.wallet?.balance || userData.balance || 0);
+          setTrees(userData.trees || 0);
+        } else {
+          throw new Error("Failed to fetch user data"); 
         }
-      } catch (err) {
-        if (!axios.isCancel(err)) {
-          toast.error("Failed to fetch profile data");
-        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        toast.error("Failed to fetch user data");
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [user?.id]);
-
+    
+    getUser();
+  }, [userId]); // Add userId as dependency
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -96,100 +92,63 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
 
     try {
-      // Validate required fields
-      if (!formData.username || !formData.email) {
-        toast.error("Username and email are required fields");
-        setLoading(false);
-        return;
-      }
-
-      const formDataToSend = new FormData();
-      
-      // Add all form fields to FormData
-      Object.keys(formData).forEach((key) => {
-        if (formData[key] !== undefined && formData[key] !== null) {
-          // For date fields, format them properly
-          if (key === 'dob' && formData[key]) {
-            formDataToSend.append(key, new Date(formData[key]).toISOString());
-          } else {
-            formDataToSend.append(key, formData[key].trim());
-          }
-        }
-      });
-
-      // Add profile picture if changed
-      if (profilePicture) {
-        formDataToSend.append("profilePicture", profilePicture);
-      }
-
-      // Log the data being sent (for debugging)
-      console.log('Sending data:', Object.fromEntries(formDataToSend));
-
-      // Make the PUT request
+      // Send formData directly instead of creating a FormData object
       const response = await axios.put(
-        `http://localhost:3000/api/users/${user.id}`,
-        formDataToSend,
+        `http://localhost:3000/api/users/${userId}`, // Use userId consistently
+        formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
-            "Accept": "application/json"
-          }
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      if (response.data) {
-        // Update the user context with new data
-        setUser(response.data);
+      if (response.status === 200 || response.status === 202) {
+        // Update the user context with the new data
+        toast.success("Profile updated successfully!"); // This line isn't working
+        const updatedUser = response.data.user || response.data;
         
-        // Reset states
+        // Update user state
+        setUser({
+          ...user,
+          ...updatedUser
+        });
+        
         setIsEditing(false);
         setProfilePicture(null);
-        
-        // Show success message
-        toast.success("Profile updated successfully!");
-        
-        // Refresh the page data
-        const [balanceResponse, userResponse] = await Promise.all([
-          axios.get(`http://localhost:3000/api/users/balance/${user.id}`),
-          axios.get(`http://localhost:3000/api/users/${user.id}`),
-        ]);
 
-        setBalance(balanceResponse.data.balance);
-        setTrees(balanceResponse.data.trees);
+        // Update local state with new data
+        setBalance(updatedUser.wallet?.balance || balance);
         
-        const userData = userResponse.data;
-        setFormData(prevData => ({
-          ...prevData,
-          name: userData.name || prevData.name,
-          username: userData.username || prevData.username,
-          phone: userData.phone || prevData.phone,
-          email: userData.email || prevData.email,
-          bio: userData.bio || prevData.bio,
-          dob: userData.dob || prevData.dob,
-        }));
-        setPreviewUrl(userData.profilePicture || "/avatar.png");
+        // Update form data with new user data
+        setFormData({
+          name: updatedUser.name || "",
+          username: updatedUser.username || "",
+          phone: updatedUser.phone || "",
+          email: updatedUser.email || "",
+          bio: updatedUser.bio || "",
+          dob: updatedUser.dob || "",
+        });
+        
+        if (updatedUser.profilePicture) {
+          setPreviewUrl(updatedUser.profilePicture);
+        }
       } else {
-        throw new Error('No data received from server');
+        throw new Error("No data received from server");
       }
-
     } catch (error) {
       console.error("Update error:", error);
-      // More detailed error message
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          "Failed to update profile";
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update profile";
       toast.error(errorMessage);
-      
-      // Log the full error response for debugging
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-      }
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -205,20 +164,27 @@ export default function Profile() {
   const handleCancel = () => {
     // Reset form data to current user data
     setFormData({
-      name: user.name || "",
-      username: user.username || "",
-      phone: user.phone || "",
-      email: user.email || "",
-      bio: user.bio || "",
-      dob: user.dob || "",
+      name: user?.name || "",
+      username: user?.username || "",
+      phone: user?.phone || "",
+      email: user?.email || "",
+      bio: user?.bio || "",
+      dob: user?.dob || "",
     });
-    setPreviewUrl(user.profilePicture || "/avatar.png");
+    setPreviewUrl(user?.profilePicture || "/avatar.png");
     setProfilePicture(null);
     setIsEditing(false);
   };
 
-  const date = new Date(user?.createdAt);
-  const formattedDate = `Joined on: ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()} Time: ${date.getHours()}:${date.getMinutes()}`;
+  const formatDate = (dateString) => {
+    if (!dateString) return "Joined recently";
+    const date = new Date(dateString);
+    return `Joined on: ${date.getDate()}/${
+      date.getMonth() + 1
+    }/${date.getFullYear()} Time: ${date.getHours()}:${date.getMinutes()}`;
+  };
+
+  const formattedDate = formatDate(user?.createdAt);
 
   if (loading) {
     return (
@@ -247,16 +213,26 @@ export default function Profile() {
                 <button
                   onClick={handleCancel}
                   className="text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-4 py-2 sm:px-5 sm:py-2.5 mr-2"
+                  disabled={submitting}
                 >
                   <X size={16} className="inline mr-1" /> Cancel
                 </button>
               ) : null}
               <button
                 onClick={handleButtonClick}
-                disabled={loading}
-                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 sm:px-5 sm:py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                disabled={loading || submitting}
+                className={`text-white font-medium rounded-lg text-sm px-4 py-2 sm:px-5 sm:py-2.5 focus:outline-none ${
+                  submitting 
+                    ? "bg-blue-400 cursor-not-allowed" 
+                    : "bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300"
+                }`}
               >
-                {isEditing ? (
+                {submitting ? (
+                  <>
+                    <div className="inline-block h-4 w-4 mr-2 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></div>
+                    Saving...
+                  </>
+                ) : isEditing ? (
                   <>
                     <Save size={16} className="inline mr-1" /> Save Changes
                   </>
@@ -295,7 +271,7 @@ export default function Profile() {
                 </div>
                 <div>
                   <p className="text-lg sm:text-xl font-medium">
-                    {formData.name || user?.name}
+                    {formData.name || user?.name || "User"}
                   </p>
                   <p className="text-sm sm:text-base text-gray-600">
                     {formattedDate}
@@ -316,9 +292,10 @@ export default function Profile() {
                   <input
                     type="text"
                     name="name"
+                    id="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
+                    disabled={!isEditing || submitting}
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100"
                     required
                   />
@@ -333,9 +310,10 @@ export default function Profile() {
                   <input
                     type="text"
                     name="username"
+                    id="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
+                    disabled={!isEditing || submitting}
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100"
                     required
                   />
@@ -350,9 +328,14 @@ export default function Profile() {
                   <input
                     type="date"
                     name="dob"
-                    value={formData.dob ? new Date(formData.dob).toISOString().split('T')[0] : ''}
+                    id="dob"
+                    value={
+                      formData.dob
+                        ? new Date(formData.dob).toISOString().split("T")[0]
+                        : ""
+                    }
                     onChange={handleInputChange}
-                    disabled={!isEditing}
+                    disabled={!isEditing || submitting}
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100"
                   />
                 </div>
@@ -366,9 +349,10 @@ export default function Profile() {
                   <input
                     type="tel"
                     name="phone"
+                    id="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
+                    disabled={!isEditing || submitting}
                     className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100"
                     pattern="[0-9]{10}"
                     required
@@ -385,9 +369,10 @@ export default function Profile() {
                 <input
                   type="email"
                   name="email"
+                  id="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={!isEditing || submitting}
                   className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 disabled:bg-gray-100"
                   required
                 />
@@ -401,9 +386,10 @@ export default function Profile() {
                 </label>
                 <textarea
                   name="bio"
-                  value={formData.bio}
+                  id="bio"
+                  value={formData.bio || ""}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={!isEditing || submitting}
                   rows="4"
                   className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                   placeholder="Write something about yourself..."
@@ -422,43 +408,47 @@ export default function Profile() {
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Current Streak</p>
                   <div className="flex items-center">
-                    <span className="text-gray-800 font-bold mr-2">15 days</span>
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-gray-800 font-bold mr-2">
+                      15 days
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Longest Streak</p>
                   <div className="flex items-center">
-                    <span className="text-gray-800 font-bold mr-2">21 days</span>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-gray-800 font-bold mr-2">
+                      21 days
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Total Focus Time</p>
                   <div className="flex items-center">
-                    <span className="text-gray-800 font-bold mr-2">126 hours</span>
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="text-gray-800 font-bold mr-2">
+                      126 hours
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Trees Planted</p>
                   <div className="flex items-center">
-                    <span className="text-gray-800 font-bold mr-2">{trees || 0}</span>
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-gray-800 font-bold mr-2">
+                      {trees || 0}
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Coins</p>
                   <div className="flex items-center">
-                    <span className="text-gray-800 font-bold mr-2">{balance || 0}</span>
-                    <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span className="text-gray-800 font-bold mr-2">
+                      {balance || 0}
+                    </span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <p className="text-gray-600">Success Rate</p>
                   <div className="flex items-center">
                     <span className="text-gray-800 font-bold mr-2">85%</span>
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   </div>
                 </div>
               </div>

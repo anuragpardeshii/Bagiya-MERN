@@ -8,6 +8,7 @@ import Hours from "./Hours";
 import Monthly from "./Monthly";
 import Weekly from "./Weekly";
 import axios from "axios";
+import LoadingScreen from "../../components/LoadingScreen";
 
 export default function Dashboard() {
   // Core states
@@ -30,7 +31,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user?.id) {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 2500); 
       return;
     }
 
@@ -40,8 +43,8 @@ export default function Dashboard() {
     const fetchUserData = async () => {
       try {
         const [balanceResponse, sessionsResponse] = await Promise.all([
-          axios.get(`http://localhost:3000/api/users/balance/${user.id}`, { signal: controller.signal }),
-          axios.get(`http://localhost:3000/api/sessions/user/${user.id}`, { signal: controller.signal })
+          axios.get(`http://localhost:3000/api/users/balance/${user.id}`),
+          axios.get(`http://localhost:3000/api/sessions/user/${user.id}`),
         ]);
 
         if (!isMounted) return;
@@ -53,7 +56,6 @@ export default function Dashboard() {
         // Process session data
         const sessions = sessionsResponse.data.sessions || [];
         processSessionData(sessions);
-
       } catch (err) {
         if (!axios.isCancel(err)) {
           console.error("Failed to fetch user data:", err);
@@ -75,16 +77,23 @@ export default function Dashboard() {
     // Calculate basic stats
     setTotalSessions(sessions.length);
 
-    const successfulSessions = sessions.filter(session => session.sessionSuccess);
-    const totalTime = successfulSessions.reduce((total, session) => total + (session.sessionTime || 0), 0);
+    const successfulSessions = sessions.filter(
+      (session) => session.sessionSuccess
+    );
+    const totalTime = successfulSessions.reduce(
+      (total, session) => total + (session.sessionTime || 0),
+      0
+    );
     setTotalFocusTime(totalTime);
-    setSuccessRate(Math.round((successfulSessions.length / sessions.length) * 100) || 0);
+    setSuccessRate(
+      Math.round((successfulSessions.length / sessions.length) * 100) || 0
+    );
 
     // Process productivity patterns
     const hourlyStats = new Array(24).fill(0);
     const dailyStats = new Array(7).fill(0);
 
-    sessions.forEach(session => {
+    sessions.forEach((session) => {
       if (session.sessionSuccess && session.endTime) {
         const date = new Date(session.endTime);
         hourlyStats[date.getHours()] += session.sessionTime || 0;
@@ -97,12 +106,24 @@ export default function Dashboard() {
     setMostProductiveHour(maxHourIndex);
 
     const maxDayIndex = dailyStats.indexOf(Math.max(...dailyStats));
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     setMostProductiveDay(days[maxDayIndex]);
   };
 
   if (loading) {
-    return <div className="p-4 sm:ml-64">Loading...</div>;
+    return (
+      <div className="p-4 sm:ml-64">
+        <LoadingScreen/>
+      </div>
+    );
   }
 
   return (
@@ -184,13 +205,13 @@ export default function Dashboard() {
             </div>
 
             <div className="bg-white rounded-lg p-6 shadow-sm">
-             <Weekly userId={user.id}/>
+              <Weekly userId={user.id} />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-            <Hours userId={user.id} />
+          <div className="gap-4">
+            <div className="bg-white flex-1 w-full rounded-lg p-6 shadow-sm">
+              <Hours className="flex-1 w-full" userId={user.id} />
             </div>
           </div>
         </div>

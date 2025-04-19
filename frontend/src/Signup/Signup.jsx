@@ -1,8 +1,28 @@
 import axios from "axios";
 import React, { useEffect } from "react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const navigate = useNavigate();
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/api/auth/check-auth", {
+          withCredentials: true
+        });
+        
+        if (response.status === 200) {
+          navigate("/timer");
+        }
+      } catch (error) {
+        console.log("User not authenticated");
+      }
+    };
+    
+    checkAuthStatus();
+  }, [navigate]);
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -45,10 +65,10 @@ export default function Signup() {
       });
 
       console.log("Signup success:", res.data);
-      alert("Signup successful!");
+      toast.success("Signup successful!");
     } catch (error) {
       console.error("Signup error", error.response?.data || error.message);
-      alert(error.response?.data?.message || "Signup failed");
+      toast.error(error.response?.data?.message || "Signup failed");
     }
   };
 
