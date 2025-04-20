@@ -66,7 +66,7 @@ const Weekly = ({ userId }) => {
                   {
                     data: weeklyData.map((item) => item.timeInvested),
                     label: "Time Invested (min)",
-                    color: "#f59e0b",
+                    color: "#3b82f6",
                     area: true,
                     showMark: true,
                   },
@@ -80,7 +80,7 @@ const Weekly = ({ userId }) => {
                     : 800
                 }
                 margin={{ left: 30, right: 30, top: 30, bottom: 50 }}
-                grid={{ vertical: true, horizontal: true }}
+                // grid={{ vertical: true, horizontal: true }}
               />
             </div>
           </div>

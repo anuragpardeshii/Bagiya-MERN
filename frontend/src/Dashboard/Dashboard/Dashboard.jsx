@@ -9,6 +9,9 @@ import Monthly from "./Monthly";
 import Weekly from "./Weekly";
 import axios from "axios";
 import LoadingScreen from "../../components/LoadingScreen";
+import { Gauge } from '@mui/x-charts/Gauge';
+import { PieChart } from '@mui/x-charts/PieChart';
+import { BarChart } from '@mui/x-charts/BarChart';
 
 export default function Dashboard() {
   // Core states
@@ -24,6 +27,7 @@ export default function Dashboard() {
   const [trees, setTrees] = useState(0);
   const [loading, setLoading] = useState(true);
   const [totalSessions, setTotalSessions] = useState(0);
+  const [successfulSessions, setSuccessfulSessions] = useState(0);
   const [totalFocusTime, setTotalFocusTime] = useState(0);
   const [successRate, setSuccessRate] = useState(0);
   const [mostProductiveHour, setMostProductiveHour] = useState(null);
@@ -77,16 +81,18 @@ export default function Dashboard() {
     // Calculate basic stats
     setTotalSessions(sessions.length);
 
-    const successfulSessions = sessions.filter(
+    const successful = sessions.filter(
       (session) => session.sessionSuccess
     );
-    const totalTime = successfulSessions.reduce(
+    setSuccessfulSessions(successful.length);
+    
+    const totalTime = successful.reduce(
       (total, session) => total + (session.sessionTime || 0),
       0
     );
     setTotalFocusTime(totalTime);
     setSuccessRate(
-      Math.round((successfulSessions.length / sessions.length) * 100) || 0
+      Math.round((successful.length / sessions.length) * 100) || 0
     );
 
     // Process productivity patterns
@@ -152,32 +158,113 @@ export default function Dashboard() {
               Focus Statistics
             </h1>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4 text-center">
-              <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg shadow-sm">
-                <div className="flex justify-center mb-2">
-                  <Award className="text-[#22c55e] w-8 h-8" />
+              <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                <div className="w-full" style={{ height: 180 }}>
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="relative w-32 h-32 flex items-center justify-center">
+                      <svg className="w-full h-full" viewBox="0 0 100 100">
+                        <circle 
+                          cx="50" 
+                          cy="50" 
+                          r="45" 
+                          fill="none" 
+                          stroke="#e5e7eb" 
+                          strokeWidth="10" 
+                        />
+                        <circle 
+                          cx="50" 
+                          cy="50" 
+                          r="45" 
+                          fill="none" 
+                          stroke="#22c55e" 
+                          strokeWidth="10" 
+                          strokeDasharray="283" 
+                          strokeDashoffset={283 - (283 * successRate / 100)} 
+                          transform="rotate(-90 50 50)" 
+                        />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center">
+                        <span className="text-[#22c55e] text-3xl font-bold">
+                          {successRate}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <h4 className="text-[#22c55e] text-2xl font-bold">
-                  {successRate}%
-                </h4>
-                <p className="text-gray-600">Success Rate</p>
+                <p className="text-gray-600 mt-2">Success Rate</p>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg shadow-sm">
-                <div className="flex justify-center mb-2">
-                  <Target className="text-[#3b82f6] w-8 h-8" />
+              
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                <div className="w-full" style={{ height: 130 }}>
+                  <Gauge
+                    value={successfulSessions}
+                    min={0}
+                    max={totalSessions || 1}
+                    valueFormat={{ style: 'decimal' }}
+                    startAngle={-110}
+                    endAngle={110}
+                    sx={{
+                      width: '100%',
+                      height: '100%',
+                      '& .MuiGauge-valueText': {
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        fill: '#3b82f6',
+                        transform: 'translateY(5px)',
+                      },
+                      '& .MuiGauge-track': {
+                        stroke: '#e6e8eb',
+                      },
+                      '& .MuiGauge-progress': {
+                        stroke: '#3b82f6',
+                      },
+                    }}
+                    text={() => `${successfulSessions} / ${totalSessions}`}
+                  />
                 </div>
-                <h4 className="text-[#3b82f6] text-2xl font-bold">
-                  {totalSessions}
-                </h4>
-                <p className="text-gray-600">Total Sessions</p>
+                <p className="text-gray-600 mt-2">Total Sessions</p>
               </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg shadow-sm">
-                <div className="flex justify-center mb-2">
-                  <Clock className="text-[#a855f7] w-8 h-8" />
+              
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                <div className="w-full" style={{ height: 180 }}>
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="relative w-32 h-32 flex items-center justify-center">
+                      <svg className="w-full h-full" viewBox="0 0 100 100">
+                        <circle 
+                          cx="50" 
+                          cy="50" 
+                          r="45" 
+                          fill="none" 
+                          stroke="#e9d5ff" 
+                          strokeWidth="10" 
+                        />
+                        <circle 
+                          cx="50" 
+                          cy="50" 
+                          r="45" 
+                          fill="none" 
+                          stroke="#a855f7" 
+                          strokeWidth="10" 
+                          strokeDasharray="283" 
+                          strokeDashoffset={283 - (283 * Math.min(Math.round(totalFocusTime / 60), 24) / 24)} 
+                          transform="rotate(-90 50 50)" 
+                        />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center">
+                        <span className="text-[#a855f7] text-3xl font-bold">
+                          {Math.round(totalFocusTime / 60)}
+                        </span>
+                        <span className="text-gray-600 text-sm">hours</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      {Math.round(totalFocusTime / 60) > 0 ? 
+                        `${Math.round((totalFocusTime / 60) / 24 * 100)}% of daily goal` : 
+                        "Start focusing!"}
+                    </div>
+                  </div>
                 </div>
-                <h4 className="text-[#a855f7] text-2xl font-bold">
-                  {Math.round(totalFocusTime / 60)}hr
-                </h4>
-                <p className="text-gray-600">Total Focus Time</p>
+                <p className="text-gray-600 mt-2">Total Focus Time</p>
               </div>
             </div>
 
