@@ -4,6 +4,7 @@ import { X, Clock, ArrowLeft, Award } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./Dashboard/context/AuthContext";
 import { toast } from "react-hot-toast";
+import axios from "axios";
 
 // Updated images array with motivational messages
 const progressContent = [
@@ -87,34 +88,26 @@ console.log(user);
   const endSession = async (success) => {
     if (!user || !startTime) return;
     try {
-      const response = await fetch("http://localhost:3000/api/sessions/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user.id,
-          sessionTime: value,
-          sessionSuccess: success,
-          startTime,
-          endTime: new Date(),
-        }),
+      const response = await axios.post("http://localhost:3000/api/sessions/create", {
+        userId: user.id,
+        sessionTime: value,
+        sessionSuccess: success,
+        startTime,
+        endTime: new Date(),
       });
       
-      if (response.ok) {
+      if (response.status === 200) {
         if (success) {
           // Award coins based on session duration
           const rewardCoins = value * 100; // 5 mins = 500 coins, 10 mins = 1000 coins, etc.
           
           try {
-            const rewardResponse = await fetch("http://localhost:3000/api/transactions/reward", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                userId: user.id,
-                amount: rewardCoins
-              }),
+            const rewardResponse = await axios.post("http://localhost:3000/api/transactions/reward", {
+              userId: user.id,
+              amount: rewardCoins
             });
             
-            if (rewardResponse.ok) {
+            if (rewardResponse.status === 200) {
               // toast.success(`Congratulations! You earned ${rewardCoins} coins!`);
             }
           } catch (rewardError) {

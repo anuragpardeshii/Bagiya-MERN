@@ -27,7 +27,7 @@ const Monthly = ({ userId }) => {
           );
           return {
             month: abbreviatedMonth,
-            timeInvested: monthData?.timeInvested || 0,
+            timeInvested: monthData ? Math.round(monthData.timeInvested / 2) : 0,
           };
         });
 

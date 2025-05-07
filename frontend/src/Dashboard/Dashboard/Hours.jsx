@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { LineChart } from "@mui/x-charts/LineChart";
 import LoadingScreen from "../../components/LoadingScreen";
 import 'flowbite';
+import axios from 'axios';
 
 const Hours = ({ userId }) => {
   const [hourlyData, setHourlyData] = useState([]);
@@ -39,22 +40,19 @@ const Hours = ({ userId }) => {
     setIsLoading(true);
     setError(null);
 
-    fetch(`http://localhost:3000/api/sessions/user/${userId}/hourly`)
-      .then(async (response) => {
-        if (!response.ok && sessionSuccess === true) {
-          throw new Error('Failed to fetch hourly data');
-        }
-        const data = await response.json();
+    axios.get(`http://localhost:3000/api/sessions/user/${userId}/hourly`)
+      .then((response) => {
+        const data = response.data;
         console.log('Hourly data from backend:', data);
 
-        // Process data for chart
+        // Process data for chart with time conversion
         const chartData = data.map(item => ({
           x: item.hour,
-          y: item.timeInvested
+          y: Math.round(item.timeInvested / 2) // Convert the timeInvested to actual minutes
         }));
 
-        // Find most productive hour
-        const mostProductive = [...data].sort((a, b) => b.timeInvested - a.timeInvested)[0];
+        // Find most productive hour with corrected time values
+        const mostProductive = [...data].sort((a, b) => (b.timeInvested / 2) - (a.timeInvested / 2))[0];
         setMostProductiveHour(mostProductive?.hour !== undefined ? `${mostProductive.hour}:00` : null);
 
         setHourlyData(chartData);
