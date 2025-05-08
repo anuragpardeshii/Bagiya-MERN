@@ -9,29 +9,29 @@ import axios from "axios";
 // Updated images array with motivational messages
 const progressContent = [
   {
-    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176196/progress1_ifeprk.png",
+    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p1_zncepc.png",
     message: "Starting your journey! Every moment of focus builds a better you."
   },
   {
-    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176196/progress2_jtq5g2.png",
+    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p2_nuuw1d.png",
     message: "Keep going! Small steps lead to big achievements."
   },
   {
-    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176196/progress3_zbcsja.png",
+    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1746599840/p3_sr9w7h.png",
     message: "You're making progress! Stay present and mindful."
   },
   {
-    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress4_t71esn.png",
+    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p4_sdbxlb.png",
     message: "Halfway there! Your dedication is inspiring."
   },
   {
-    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress6_vy9mwi.png",
+    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p5_rn62yg.png",
     message: "Almost there! Your focus is creating lasting change."
   },
-  {
-    image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress7_t2bts0.png",
-    message: "Final stretch! Celebrate your commitment to growth."
-  }
+  // {
+  //   image: "https://res.cloudinary.com/doaaq5amo/image/upload/v1743176197/progress7_t2bts0.png",
+  //   message: "Final stretch! Celebrate your commitment to growth."
+  // }
 ];
 
 function Timer() {
@@ -45,8 +45,8 @@ function Timer() {
   const [fade, setFade] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [sessionCompleted, setSessionCompleted] = useState(false);
-console.log(user);
-  // Format time for display
+  const [isLoading, setIsLoading] = useState(false);
+
   const formatTime = (milliseconds) => {
     const hours = Math.floor(milliseconds / 3600000);
     const minutes = Math.floor((milliseconds % 3600000) / 60000);
@@ -58,73 +58,87 @@ console.log(user);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Modified to ensure 5-minute intervals
   const handleSliderChange = (newValue) => {
-    // Round to nearest 5 minutes
     const roundedValue = Math.round(newValue / 5) * 5;
-    setValue(roundedValue === 0 ? 5 : roundedValue); // Minimum 5 minutes
+    setValue(roundedValue === 0 ? 5 : roundedValue);
   };
 
   const startTimer = () => {
+    if (!user?.id) {
+      toast.error("Please log in to start a session");
+      return;
+    }
     setTimeLeft(value * 60 * 1000);
     setStartTime(new Date());
     setSessionCompleted(false);
-    setCurrentProgressIndex(0); // Start with the first image
-    // toast.success(`Starting ${value} minute session. Stay focused!`);
+    setCurrentProgressIndex(0);
+    setIsPaused(false);
   };
 
   const pauseTimer = () => {
-    if (isPaused) {
-      // Resume timer
-      setIsPaused(false);
-      toast.success("Timer resumed");
-    } else {
-      // Pause timer
-      setIsPaused(true);
-      toast.success("Timer paused");
-    }
+    setIsPaused(!isPaused);
+    toast.success(isPaused ? "Timer resumed" : "Timer paused");
   };
 
   const endSession = async (success) => {
-    if (!user || !startTime) return;
+    // Prevent multiple executions
+    if (!user?.id || !startTime || isLoading) return;
+    
+    // Clear interval first
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
+    
+    setIsLoading(true);
+    
     try {
-      const response = await axios.post("http://localhost:3000/api/sessions/create", {
+      // Create session object once to ensure consistency
+      const sessionData = {
         userId: user.id,
         sessionTime: value,
         sessionSuccess: success,
         startTime,
         endTime: new Date(),
-      });
+      };
+
+      // Save the session
+      const response = await axios.post("http://localhost:3000/api/sessions/create", sessionData);
       
-      if (response.status === 200) {
-        if (success) {
-          // Award coins based on session duration
-          const rewardCoins = value * 100; // 5 mins = 500 coins, 10 mins = 1000 coins, etc.
-          
-          try {
-            const rewardResponse = await axios.post("http://localhost:3000/api/transactions/reward", {
-              userId: user.id,
-              amount: rewardCoins
-            });
-            
-            if (rewardResponse.status === 200) {
-              // toast.success(`Congratulations! You earned ${rewardCoins} coins!`);
-            }
-          } catch (rewardError) {
-            console.error("Error awarding coins:", rewardError);
-          }
-          
+      // Only proceed with rewarding coins if session was successful
+      if (success && response.status === 200) {
+        const rewardCoins = value * 100;
+        
+        const rewardResponse = await axios.post("http://localhost:3000/api/transactions/reward", {
+          userId: user.id,
+          amount: rewardCoins
+        });
+        
+        if (rewardResponse.status === 200) {
           setSessionCompleted(true);
-          toast.success("Congratulations! Session completed successfully!");
-        } else {
-          toast.error("Session ended early. Try again next time!");
+          toast.success(`Congratulations! Session completed successfully! You earned ${rewardCoins} coins!`);
+          
+          // Set a timeout to hide the completion message after 3 seconds
+          setTimeout(() => {
+            setSessionCompleted(false);
+            setValue(30); // Reset to default value
+          }, 3000);
         }
+      } else if (!success) {
+        // For unsuccessful sessions
+        setSessionCompleted(false);
+        toast.error("Session ended early. No coins awarded.");
       }
     } catch (error) {
-      console.error("Error saving session:", error);
-      toast.error("Failed to save your session");
+      console.error("Error in session management:", error);
+      toast.error(success ? "Failed to complete session" : "Failed to end session");
+      setSessionCompleted(false);
+    } finally {
+      setIsLoading(false);
+      setTimeLeft(0);
+      setStartTime(null);
     }
-  };
+};
 
   useEffect(() => {
     if (timeLeft > 0 && !isPaused) {
@@ -132,16 +146,14 @@ console.log(user);
         setTimeLeft((prev) => {
           if (prev <= 1000) {
             clearInterval(id);
-            endSession(true);
+            // Remove the endSession call from here
             return 0;
           }
 
-          // Calculate progress percentage
           const totalTime = value * 60 * 1000;
           const elapsedTime = totalTime - prev;
           const progressPercentage = (elapsedTime / totalTime) * 100;
           
-          // Determine which image to show based on progress
           const newIndex = Math.min(
             Math.floor(progressPercentage / (100 / progressContent.length)),
             progressContent.length - 1
@@ -152,11 +164,6 @@ console.log(user);
             setTimeout(() => {
               setCurrentProgressIndex(newIndex);
               setFade(true);
-              // Show motivational message as toast
-              // toast(progressContent[newIndex].message, {
-              //   icon: '🌱',
-              //   duration: 4000,
-              // });
             }, 300);
           }
           
@@ -169,11 +176,20 @@ console.log(user);
     }
   }, [timeLeft, isPaused, value, currentProgressIndex]);
 
+  // Add a new useEffect to handle session completion
+  useEffect(() => {
+    if (timeLeft === 0 && startTime) {
+      endSession(true);
+    }
+  }, [timeLeft]);
+
   const confirmGiveUp = () => {
-    clearInterval(intervalId);
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+    endSession(false); // Add this line to properly end the session as unsuccessful
     setTimeLeft(0);
     setShowModal(false);
-    endSession(false);
     setValue(30);
   };
 
@@ -183,6 +199,11 @@ console.log(user);
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-200 items-center justify-center p-4">
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+        </div>
+      )}
       <div className="w-full max-w-md">
         <Link
           to="/dashboard"
@@ -200,6 +221,19 @@ console.log(user);
               Focus Timer
             </h1>
             
+            <div className="flex justify-center gap-2 mb-4">
+              {[15, 30, 45, 60].map((min) => (
+                <button
+                  key={min}
+                  onClick={() => selectPresetTime(min)}
+                  className={`px-4 py-2 rounded-lg border ${
+                    value === min ? "bg-green-500 text-white" : "bg-white text-gray-700"
+                  }`}
+                >
+                  {min} min
+                </button>
+              ))}
+            </div>
             
             <div className="relative flex justify-center items-center my-8">
               <CircleSlider
@@ -208,6 +242,7 @@ console.log(user);
                 onChange={handleSliderChange}
                 size={220}
                 max={120}
+                min={5}
                 gradientColorFrom="#22c55e"
                 gradientColorTo="#16a34a"
                 knobRadius={12}
@@ -311,9 +346,17 @@ console.log(user);
                   <X size={24} />
                 </button>
               </div>
-              <p className="mb-6 text-gray-600">
+              <p className="text-gray-600">
                 Are you sure you want to end this session early? Your progress will be saved, but marked as incomplete.
               </p>
+              <img
+                src="https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p6_trrmmn.png"
+                alt="Focus visualization"
+                className={`mx-auto rounded-2xl h-full w-50 py-8 object-cover transition-opacity duration-500 ease-in-out ${
+                  fade ? "opacity-100" : "opacity-0"
+                }`}
+                style={{ borderRadius: "20rem" }}
+              />
               <div className="flex space-x-4">
                 <button
                   onClick={() => setShowModal(false)}

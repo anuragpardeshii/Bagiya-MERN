@@ -181,7 +181,7 @@ export default function Profile() {
     const date = new Date(dateString);
     return `Joined on: ${date.getDate()}/${
       date.getMonth() + 1
-    }/${date.getFullYear()} Time: ${date.getHours()}:${date.getMinutes()}`;
+    }/${date.getFullYear()}`;
   };
 
   const formattedDate = formatDate(user?.createdAt);

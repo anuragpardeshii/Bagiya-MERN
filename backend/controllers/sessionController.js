@@ -18,7 +18,7 @@ const createSession = async (req, res) => {
     });
 
     await session.save();
-    res.status(201).json({ message: "Session recorded successfully", session });
+    res.status(200).json({ message: "Session recorded successfully", session });
   } catch (error) {
     res.status(500).json({ message: "Error recording session", error: error.message });
   }

@@ -36,23 +36,53 @@ const Hours = ({ userId }) => {
     };
   }, [hourlyData]); // Re-run when hourlyData changes
 
-  useEffect(() => {
+  const fetchHourlyData = (filterValue) => {
+    let dateParam;
+    const today = new Date();
+    
+    switch(filterValue) {
+      case "yesterday":
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        dateParam = yesterday.toISOString().split('T')[0];
+        break;
+      case "lastWeek":
+        dateParam = "lastWeek";
+        break;
+      case "lastMonth":
+        dateParam = "lastMonth";
+        break;
+      case "allTime":
+        dateParam = "allTime";
+        break;
+      default:
+        dateParam = today.toISOString().split('T')[0];
+    }
+
     setIsLoading(true);
     setError(null);
 
-    axios.get(`http://localhost:3000/api/sessions/user/${userId}/hourly`)
+    axios.get(`http://localhost:3000/api/sessions/user/${userId}/hourly?date=${dateParam}&sessionSuccess=true`)
       .then((response) => {
         const data = response.data;
         console.log('Hourly data from backend:', data);
+    
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid data format received from server');
+        }
 
-        // Process data for chart with time conversion
-        const chartData = data.map(item => ({
+        const validData = data.filter(item => 
+          item && 
+          typeof item.hour !== 'undefined' && 
+          typeof item.timeInvested !== 'undefined'
+        );
+
+        const chartData = validData.map(item => ({
           x: item.hour,
-          y: Math.round(item.timeInvested / 2) // Convert the timeInvested to actual minutes
+          y: Math.round(item.timeInvested)
         }));
 
-        // Find most productive hour with corrected time values
-        const mostProductive = [...data].sort((a, b) => (b.timeInvested / 2) - (a.timeInvested / 2))[0];
+        const mostProductive = [...validData].sort((a, b) => (b.timeInvested) - (a.timeInvested))[0];
         setMostProductiveHour(mostProductive?.hour !== undefined ? `${mostProductive.hour}:00` : null);
 
         setHourlyData(chartData);
@@ -64,10 +94,19 @@ const Hours = ({ userId }) => {
       .finally(() => {
         setIsLoading(false);
       });
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchHourlyData(timeFilter.toLowerCase().replace(' ', ''));
   }, [userId]);
 
   if (isLoading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+  if (error) return (
+    <div className="p-6 text-red-500 bg-red-50 border border-red-200 rounded-md">
+      <strong>Error:</strong> {error}
+    </div>
+  );
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-4 md:p-6">
@@ -121,16 +160,24 @@ const Hours = ({ userId }) => {
           <div id="hourlyTimeFilter" className="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44">
             <ul className="py-2 text-sm text-gray-700" aria-labelledby="hourlyFilterDropdown">
               <li>
-                <a href="#" className="block px-4 py-2 hover:bg-gray-100">Yesterday</a>
+                <a onClick={() => fetchHourlyData('yesterday')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                  Yesterday
+                </a>
               </li>
               <li>
-                <a href="#" className="block px-4 py-2 hover:bg-gray-100">Last week</a>
+                <a onClick={() => fetchHourlyData('lastWeek')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                  Last week
+                </a>
               </li>
               <li>
-                <a href="#" className="block px-4 py-2 hover:bg-gray-100">Last month</a>
+                <a onClick={() => fetchHourlyData('lastMonth')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                  Last month
+                </a>
               </li>
               <li>
-                <a href="#" className="block px-4 py-2 hover:bg-gray-100">All time</a>
+                <a onClick={() => fetchHourlyData('allTime')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                  All time
+                </a>
               </li>
             </ul>
           </div>

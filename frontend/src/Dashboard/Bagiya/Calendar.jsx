@@ -270,32 +270,30 @@ export default function Calendar() {
                     return (
                       <div
                         key={index}
-                        className={`aspect-square p-4 flex items-center justify-center ${
+                        className={`aspect-square p-4 flex font-bold items-center justify-center ${
                           day.isCurrentMonth 
                             ? 'bg-white hover:bg-green-50' 
                             : 'bg-gray-50'
                         } border-r border-b border-gray-200 transition-all duration-300`}
                       >
-                        <div className="flex flex-col items-center gap-1">
+                        <div className="flex flex-col items-center gap-1 relative w-full h-full">
                           <span
                             className={`w-8 h-8 flex items-center justify-center rounded-full text-sm ${
                               day.isCurrentMonth 
-                                ? 'text-gray-700 hover:bg-green-100 hover:text-green-700 cursor-pointer' 
+                                ? 'text-gray-700 hover:bg-green-100 opacity-60 z-50 hover:text-green-700 cursor-pointer' 
                                 : 'text-gray-400'
                             }`}
                           >
                             {day.day}
                           </span>
                           {sessionStatus && (
-                            <span
-                              className={`text-xs font-medium w-5 h-5 flex items-center justify-center rounded-full ${
+                            <div
+                              className={`absolute inset-0 bg-contain bg-center rounded-4xl bg-no-repeat opacity-40 ${
                                 sessionStatus === 'S'
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-red-100 text-red-700'
+                                  ? 'bg-[url("https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p5_rn62yg.png")]'
+                                  : 'bg-[url("https://res.cloudinary.com/doaaq5amo/image/upload/v1746599839/p6_trrmmn.png")]'
                               }`}
-                            >
-                              {sessionStatus}
-                            </span>
+                            ></div>
                           )}
                         </div>
                       </div>

@@ -21,7 +21,7 @@ const Weekly = ({ userId }) => {
         // Process weekly data
         const weeklyChartData = weeklyData.map((item) => ({
           day: item.day.substring(0, 3).toUpperCase(), // Convert to abbreviated form (e.g., "MON")
-          timeInvested: Math.round(item.timeInvested / 2) || 0,
+          timeInvested: Math.round(item.timeInvested) || 0,
         }));
 
         setWeeklyData(weeklyChartData);
