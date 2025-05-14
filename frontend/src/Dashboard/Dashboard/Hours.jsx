@@ -11,7 +11,7 @@ const Hours = ({ userId }) => {
   const [mostProductiveHour, setMostProductiveHour] = useState(null);
   const [chartWidth, setChartWidth] = useState(0);
   const chartContainerRef = useRef(null);
-  const [timeFilter, setTimeFilter] = useState("Last week");
+  const [timeFilter, setTimeFilter] = useState("Today");
 
   // Add resize handler and update width whenever component updates
   useEffect(() => {
@@ -37,27 +37,8 @@ const Hours = ({ userId }) => {
   }, [hourlyData]); // Re-run when hourlyData changes
 
   const fetchHourlyData = (filterValue) => {
-    let dateParam;
     const today = new Date();
-    
-    switch(filterValue) {
-      case "yesterday":
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        dateParam = yesterday.toISOString().split('T')[0];
-        break;
-      case "lastWeek":
-        dateParam = "lastWeek";
-        break;
-      case "lastMonth":
-        dateParam = "lastMonth";
-        break;
-      case "allTime":
-        dateParam = "allTime";
-        break;
-      default:
-        dateParam = today.toISOString().split('T')[0];
-    }
+    const dateParam = today.toISOString().split('T')[0];
 
     setIsLoading(true);
     setError(null);
@@ -98,7 +79,7 @@ const Hours = ({ userId }) => {
 
   // Initial data fetch
   useEffect(() => {
-    fetchHourlyData(timeFilter.toLowerCase().replace(' ', ''));
+    fetchHourlyData('today');
   }, [userId]);
 
   if (isLoading) return <div className="p-6">Loading...</div>;
@@ -152,35 +133,9 @@ const Hours = ({ userId }) => {
         <div>
           <button id="hourlyFilterDropdown"
             data-dropdown-toggle="hourlyTimeFilter"
-            data-dropdown-placement="bottom" type="button" className="px-3 py-2 inline-flex items-center text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-green-700 focus:z-10 focus:ring-4 focus:ring-gray-200">
-            {timeFilter} <svg className="w-2.5 h-2.5 ms-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
-              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4"/>
-            </svg>
+            data-dropdown-placement="bottom" type="button" className="hidden">
+            {timeFilter}
           </button>
-          <div id="hourlyTimeFilter" className="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44">
-            <ul className="py-2 text-sm text-gray-700" aria-labelledby="hourlyFilterDropdown">
-              <li>
-                <a onClick={() => fetchHourlyData('yesterday')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                  Yesterday
-                </a>
-              </li>
-              <li>
-                <a onClick={() => fetchHourlyData('lastWeek')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                  Last week
-                </a>
-              </li>
-              <li>
-                <a onClick={() => fetchHourlyData('lastMonth')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                  Last month
-                </a>
-              </li>
-              <li>
-                <a onClick={() => fetchHourlyData('allTime')} className="block px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                  All time
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
 

@@ -14,6 +14,7 @@ import NotFound from "./NotFound";
 import { AuthProvider } from "./Dashboard/context/AuthContext";
 import Times from "./Times";
 import ProtectedRoute from "./Dashboard/context/ProtectedRoute";
+import Challenges from "./Challenges/Challenges";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
                 <Route path="profile" element={<ProtectedRoute element={<Profile />} />} />
                 <Route path="friends" element={<ProtectedRoute element={<Friends />} />} />
                 <Route path="rankings" element={<ProtectedRoute element={<Rankings />} />} />
+                <Route path="challenges" element={<ProtectedRoute element={<Challenges/>} />} />
               </Routes>
             </AuthProvider>
           }

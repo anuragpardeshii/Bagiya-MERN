@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import {Swords, Timer, AlarmClock } from "lucide-react"
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import logo from "/src/assets/Images/logo.png";
@@ -90,22 +91,7 @@ export default function Sidebar() {
                 href="/timer"
                 className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="text-gray-500 transition duration-75 group-hover:text-gray-900"
-                  viewBox="0 0 24 24"
-                  width="22"
-                  height="22"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="6" x2="12" y2="12" />
-                  <line x1="12" y1="12" x2="16" y2="12" />
-                </svg>
+                <Timer />
                 <span className="ms-3">Timer</span>
               </a>
             </li>
@@ -165,6 +151,15 @@ export default function Sidebar() {
                   />
                 </svg>
                 <span className="flex-1 ms-3 whitespace-nowrap">Profile</span>
+              </a>
+            </li>
+            <li>
+              <a
+                href="/dashboard/challenges"
+                className="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group"
+              >
+                <Swords />
+                <span className="ms-3">Challenges</span>
               </a>
             </li>
             <li>

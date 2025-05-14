@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Calendar, Trees } from "lucide-react";
+import { Trees, Coins } from "lucide-react";
 import Sidebar from "../Sidebar";
 import axios from "axios";
 import Calender from "./Calendar";
 import { useAuth } from "../context/AuthContext";
+import toast from "react-hot-toast";
 
 const generateContributions = () => {
   const contributions = [];
@@ -25,6 +26,7 @@ export default function Bagiya() {
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(null);
   const [trees, setTrees] = useState(null);
+  const [recent, setRecent] = useState(null);
 
   useEffect(() => {
     if (!user?.id) {
@@ -64,6 +66,48 @@ export default function Bagiya() {
     };
   }, [user?.id]);
 
+  const recentTransactions = async () => {
+    try {
+      const response = await axios.get(`http://localhost:3000/api/transactions/${user?.id}`);
+      if (response.status === 200) {
+        console.log("Recent transactions fetched successfully", response.data);
+        setRecent(response.data.transactions);
+      } else {
+        console.log("Failed to fetch recent transactions");
+      }
+    } catch (error) {
+      console.error("Error fetching recent transactions:", error);
+    }
+  };
+
+  useEffect(() => {
+    recentTransactions();
+  }, []);
+
+  const handlePlantTree = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setLoading(true);
+      const response = await axios.post('http://localhost:3000/api/transactions/spend', {
+        userId: user.id,
+        amount: 2500,
+        type: 'TREE_PLANTING'
+      });
+
+      if (response.data.success) {
+        setBalance(response.data.balance);
+        setTrees(response.data.trees);
+        toast.success("Congratulations! You've successfully planted a tree 🌱")
+      }
+    } catch (error) {
+      console.error('Failed to plant tree:', error);
+      toast.failure('Failed to plant tree. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const colors = [
     "bg-gray-100",
     "bg-green-200",
@@ -82,7 +126,7 @@ export default function Bagiya() {
             <div className="bg-white rounded-xl shadow-sm p-8">
               <p className="text-lg text-gray-600">Total Trees planted</p>
               <h2 className="text-2xl text-gray-700 font-bold">
-                {trees ? trees : 0}
+                {trees ?? 0}
               </h2>
               {/* <p className="text-[green] font-medium text-md">+3 this month</p> */}
             </div>
@@ -109,14 +153,16 @@ export default function Bagiya() {
             <h3 className="text-xl font-semibold mb-4 ms-2">Plant a Tree</h3>
             <div className="bg-green-50 p-6 rounded-lg">
               <p className="text-green-800 mb-4">
-                You have <span className="font-bold">2,500 coins</span>{" "}
-                available. Each tree costs 1,000 coins to plant.
+                You have <span className="font-bold">{balance ?? 0} coins</span>{" "}
+                available. Each tree costs 2,500 coins to plant.
               </p>
               <button
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                aria-label="Plant a tree using 1,000 coins"
+                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                aria-label="Plant a tree using 2,500 coins"
+                onClick={handlePlantTree}
+                disabled={loading || !balance || balance < 2500}
               >
-                Plant a Tree (1,000 coins)
+                {loading ? "Planting..." : `Plant a Tree (2,500 coins)`}
               </button>
             </div>
           </div>
@@ -126,51 +172,29 @@ export default function Bagiya() {
               Recent Activities
             </h2>
             <div className="gap-4">
-              <div className="flex justify-between items-center bg-gray-50 mb-4 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <Trees size={40} color="green" className="me-2" />
-                  <div>
-                    <h2 className="text-md text-gray-600 font-medium">
-                      Oak Tree Planted
-                    </h2>
-                    <p className="text-sm text-gray-700">March 10, 2024</p>
+              {recent?.slice(0, 5).map((transaction, index) => (
+                <div key={index} className="flex justify-between items-center bg-gray-50 mb-4 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    {transaction.type === 'earn' ? (
+                      <Coins size={40} color="green" className="me-2" />
+                    ) : (
+                      <Trees size={40} color="green" className="me-2" />
+                    )}
+                    <div>
+                      <h2 className="text-md text-gray-600 font-medium">
+                        {transaction.type === 'spend' ? 'Tree Planted' : 'Coins Earned'}
+                      </h2>
+                      <p className="text-sm text-gray-700">
+                        {new Date(transaction.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <h2>{transaction.amount > 0 ? `+${transaction.amount}` : transaction.amount} coins</h2>
+                    <p className="text-[green]">{transaction.description}</p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                  <h2>-1000 coins</h2>
-                  <p className="text-[green]">Trees for the Future</p>
-                </div>
-              </div>
-              <div className="flex justify-between items-center bg-gray-50 mb-4 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <Trees size={40} color="green" className="me-2" />
-                  <div>
-                    <h2 className="text-md text-gray-600 font-medium">
-                      Oak Tree Planted
-                    </h2>
-                    <p className="text-sm text-gray-700">March 10, 2024</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <h2>-1000 coins</h2>
-                  <p className="text-[green]">Trees for the Future</p>
-                </div>
-              </div>
-              <div className="flex justify-between items-center bg-gray-50 mb-4 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <Trees size={40} color="green" className="me-2" />
-                  <div>
-                    <h2 className="text-md text-gray-600 font-medium">
-                      Oak Tree Planted
-                    </h2>
-                    <p className="text-sm text-gray-700">March 10, 2024</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <h2>-1000 coins</h2>
-                  <p className="text-[green]">Trees for the Future</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
