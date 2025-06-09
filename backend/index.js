@@ -9,6 +9,7 @@ const transactionRoutes = require("./routes/transactionRoutes.js");
 const userRoutes = require("./routes/userRoutes.js");
 const morgan = require('morgan');
 const sessionRoutes = require("./routes/sessionRoutes.js");
+const challengesRoutes = require("./routes/challenges.js");
 
 dotenv.config();
 const app = express();
@@ -43,6 +44,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/sessions", sessionRoutes);
+app.use("/api/challenges", challengesRoutes);
 
 // Connect to MongoDB
 mongoose
