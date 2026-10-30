@@ -1,63 +1,55 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import "./index.css";
-import Dashboard from "./Dashboard/Dashboard/Dashboard";
-import Bagiya from "./Dashboard/Bagiya/Bagiya";
-import "flowbite/dist/flowbite.min.js";
-import Profile from "./Dashboard/Profile/Profile";
-import Friends from "./Dashboard/Friends/Friends";
-import Home from "./Home/Home";
-import Rankings from "./Dashboard/Rankings/Rankings";
-import Login from "./Login/Login";
-import Signup from "./Signup/Signup";
-import { Toaster } from "react-hot-toast";
-import NotFound from "./NotFound";
-import { AuthProvider } from "./Dashboard/context/AuthContext";
-import Times from "./Times";
-import ProtectedRoute from "./Dashboard/context/ProtectedRoute";
-import Challenges from "./Challenges/Challenges";
-
-function App() {
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { AuthProvider } from './Dashboard/context/AuthContext';
+import ProtectedRoute from './Dashboard/context/ProtectedRoute';
+import Sidebar from './Dashboard/Sidebar';
+import { Loading } from './components/UI';
+const Home = lazy(() => import('./Home/Home'));
+const Login = lazy(() => import('./Login/Login'));
+const Signup = lazy(() => import('./Signup/Signup'));
+const Dashboard = lazy(() => import('./Dashboard/Dashboard/Dashboard'));
+const Timer = lazy(() => import('./Times'));
+const Garden = lazy(() => import('./Dashboard/Bagiya/Bagiya'));
+const Profile = lazy(() => import('./Dashboard/Profile/Profile'));
+const Friends = lazy(() => import('./Dashboard/Friends/Friends'));
+const Rankings = lazy(() => import('./Dashboard/Rankings/Rankings'));
+const Challenges = lazy(() => import('./Challenges/Challenges'));
+const NotFound = lazy(() => import('./NotFound'));
+export default function App() {
   return (
     <BrowserRouter>
-      {/* Move Toaster outside of Routes */}
-      <Toaster position="top-center" reverseOrder={false} />
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-
-        {/* Private Routes with AuthProvider */}
-        <Route
-          path="/dashboard/*"
-          element={
-            <AuthProvider>
-              <Routes>
-                <Route path="" element={<ProtectedRoute element={<Dashboard />} />} />
-                <Route path="bagiya" element={<ProtectedRoute element={<Bagiya />} />} />
-                <Route path="profile" element={<ProtectedRoute element={<Profile />} />} />
-                <Route path="friends" element={<ProtectedRoute element={<Friends />} />} />
-                <Route path="rankings" element={<ProtectedRoute element={<Rankings />} />} />
-                <Route path="challenges" element={<ProtectedRoute element={<Challenges/>} />} />
-              </Routes>
-            </AuthProvider>
-          }
+      <AuthProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              borderRadius: '12px',
+              background: '#244b38',
+              color: '#fff',
+            },
+          }}
         />
-
-        <Route
-          path="/timer"
-          element={
-            <AuthProvider>
-              <ProtectedRoute element={<Times />} />
-            </AuthProvider>
-          }
-        />
-
-        {/* Catch-All Route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Sidebar />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/timer" element={<Timer />} />
+                <Route path="/dashboard/bagiya" element={<Garden />} />
+                <Route path="/dashboard/profile" element={<Profile />} />
+                <Route path="/dashboard/friends" element={<Friends />} />
+                <Route path="/dashboard/rankings" element={<Rankings />} />
+                <Route path="/dashboard/challenges" element={<Challenges />} />
+              </Route>
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
-
-export default App;

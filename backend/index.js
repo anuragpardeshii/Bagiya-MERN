@@ -1,56 +1,57 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const cookieParser = require("cookie-parser");
-const session = require("express-session");
-const authRoutes = require("./routes/authRoutes.js");
-const transactionRoutes = require("./routes/transactionRoutes.js");
-const userRoutes = require("./routes/userRoutes.js");
-const morgan = require('morgan');
-const sessionRoutes = require("./routes/sessionRoutes.js");
-const challengesRoutes = require("./routes/challenges.js");
-
-dotenv.config();
-const app = express();
-
-// Middleware
-app.use(express.json());
-const corsOptions = {
-  origin: "http://localhost:5173", // Allow requests from frontend
-  credentials: true, // Allow cookies & authentication headers
-};
-
-app.use(cors(corsOptions));
-app.use(cookieParser());
-app.use(morgan('dev')); 
-
-// Session Configuration
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_secret_key_here", // Provide a strong secret
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      cookie: { secure: false, httpOnly: true },
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    },
-  })
-);
-
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/transactions", transactionRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/sessions", sessionRoutes);
-app.use("/api/challenges", challengesRoutes);
-
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const mongoose = require('mongoose');
+const MongoStore = require('connect-mongo');
+const { loadConfig } = require('./config');
+const { createApp } = require('./app');
+const { expireStrict } = require('./services/focus');
+async function main() {
+  const config = loadConfig();
+  mongoose.set('autoIndex', false);
+  mongoose.set('bufferCommands', false);
+  await mongoose.connect(config.mongoUri, {
+    serverSelectionTimeoutMS: 10000,
+    maxPoolSize: 10,
+  });
+  const topology = await mongoose.connection.db.admin().command({ hello: 1 });
+  if (!topology.setName)
+    throw new Error(
+      'MongoDB must run as a replica set for transactional rewards',
+    );
+  const store = MongoStore.create({
+    client: mongoose.connection.getClient(),
+    collectionName: 'auth_sessions',
+    ttl: 86400,
+  });
+  const app = createApp(config, store);
+  const server = app.listen(config.port, '0.0.0.0', () =>
+    console.log(JSON.stringify({ event: 'listening', port: config.port })),
+  );
+  const sweep = () =>
+    expireStrict().catch(() =>
+      console.error(JSON.stringify({ event: 'strict_expiry_failed' })),
+    );
+  await sweep();
+  const expiryTimer = setInterval(sweep, 15000);
+  expiryTimer.unref();
+  const shutdown = () => {
+    clearInterval(expiryTimer);
+    server.close(async () => {
+      await mongoose.disconnect();
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+}
+main().catch((error) => {
+  console.error(
+    JSON.stringify({
+      event: 'startup_failed',
+      message:
+        error.name === 'Error'
+          ? error.message
+          : 'Database startup failed. Check configuration and availability.',
+    }),
+  );
+  process.exit(1);
+});

@@ -1,120 +1,230 @@
-import React from "react";
-import Sidebar from "../Sidebar";
-
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Trophy,
+  ArrowUpRight,
+  Crown,
+  Medal,
+  RefreshCw,
+  Sprout,
+} from 'lucide-react';
+import { useResource } from '../../hooks/useResource';
+import { useAuth } from '../context/AuthContext';
+import { PageHeading, Resource, Pagination } from '../../components/UI';
+import toast from 'react-hot-toast';
+import { api, minutes, number } from '../../lib/api';
+function Champions({ rankings }) {
+  const top = [0, 1, 2].map((index) => rankings[index] || { rank: index + 1 }),
+    maximum = top[0]?.minutes || 1;
+  return (
+    <section className="champions" aria-label="Focus champions">
+      <div className="champions-heading">
+        <span className="champion-seal">
+          <Trophy size={24} />
+        </span>
+        <p className="eyebrow">TIME WELL SPENT</p>
+        <h2>Meet the champions.</h2>
+        <p>Small moments of focus. Remarkable growth.</p>
+      </div>
+      <div
+        className="podium"
+        role="list"
+        aria-label="Top three by completed focus minutes"
+      >
+        {top.map((member) => (
+          <div
+            className={`podium-member place-${member.rank} ${member._id ? '' : 'podium-vacant'}`}
+            key={member.rank}
+            role="listitem"
+            aria-label={
+              member._id
+                ? `${member.rank === 1 ? 'Champion' : `Place ${member.rank}`}: ${member.name}, ${member.minutes} focus minutes`
+                : `Place ${member.rank} is unclaimed`
+            }
+          >
+            <div className="podium-person">
+              {member.rank === 1 ? (
+                <Crown className="winner-crown" size={26} />
+              ) : (
+                <Medal size={20} />
+              )}
+              <span className="avatar">
+                {member.name?.charAt(0) || <Sprout size={22} />}
+              </span>
+              <strong>{member.name || 'Room to grow'}</strong>
+              <small>
+                {member.username ? `@${member.username}` : 'An open place'}
+              </small>
+              <span className="podium-score">
+                {member._id ? minutes(member.minutes) : 'Unclaimed'}
+              </span>
+            </div>
+            <div className="podium-track">
+              <div
+                className="podium-bar"
+                style={{
+                  height: `${((member.minutes || 0) / maximum) * 100}%`,
+                }}
+              >
+                <span>{String(member.rank).padStart(2, '0')}</span>
+              </div>
+            </div>
+            <span className="podium-caption">
+              {member.rank === 1
+                ? 'Champion'
+                : member.rank === 2
+                  ? 'Second place'
+                  : 'Third place'}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="chart-note">
+        {rankings.length
+          ? 'Bar heights reflect completed focus minutes in the selected period.'
+          : 'Join the leaderboard and complete a session to take the first place.'}
+      </p>
+    </section>
+  );
+}
 export default function Rankings() {
+  const [period, setPeriod] = useState('week'),
+    [page, setPage] = useState(1);
+  const resource = useResource(
+    `/social/rankings?period=${period}&page=${page}`,
+    { revalidateOnFocus: true },
+  );
+  const { user, setUser } = useAuth();
+  const [joining, setJoining] = useState(false);
+  async function join() {
+    setJoining(true);
+    try {
+      const data = await api('/social/rankings/preference', {
+        method: 'PATCH',
+        body: { rankingOptIn: true },
+      });
+      setUser(data.user);
+      setPage(1);
+      resource.reload();
+      toast.success('You have joined the leaderboard.');
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setJoining(false);
+    }
+  }
   return (
     <>
-    <Sidebar/>
-      <section id="global-ranking" className="p-6 p-4 sm:p-8 sm:ml-64 bg-[#e5e7eb] min-h-screen">
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Global Rankings</h1>
-          <div className="flex items-center space-x-4">
-            <div className="bg-white px-4 py-2 rounded-lg border border-neutral-200/20">
-              <span className="text-sm text-neutral-600">Your Global Rank:</span>
-              <span className="ml-2 font-bold text-green-500">#156</span>
-            </div>
-            <select
-              className="bg-white px-4 py-2 rounded-lg border border-neutral-200/20 focus:outline-none"
-              fdprocessedid="ur98dm"
-            >
-              <option>This Week</option>
-              <option>This Month</option>
-              <option>This Time</option>
-            </select>
+      <PageHeading
+        eyebrow="INSPIRED BY EACH OTHER"
+        title="A community in bloom."
+        description="Celebrating time well spent. Every beginning belongs here."
+      >
+        <select
+          aria-label="Leaderboard period"
+          value={period}
+          onChange={(e) => {
+            setPeriod(e.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="week">This week</option>
+          <option value="month">This month</option>
+          <option value="all">All time</option>
+        </select>
+      </PageHeading>
+      {!user.rankingOptIn && (
+        <div className="notice">
+          <Trophy size={24} />
+          <div>
+            <strong>Grow quietly, or grow together.</strong>
+            <p>
+              Your progress is private. Joining shares your name, username and
+              focus totals. You can leave at any time in your profile.
+            </p>
           </div>
-        </header>
-        {/* top 3 users */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-lg border border-neutral-200/20 text-center order-2 md:order-1">
-            <div className="text-3xl mb-2">🥈</div>
-            <img src="https://avatar.iran.liara.run/public" alt="Second Place" className="w-20 h-20 rounded-full mx-auto mb-3"/>
-            <h3 className="font-semibold">Sarah Chen</h3>
-            <p className="text-neutral-600 text-sm mb-2">245 hours focused</p>
-            <p className="text-sm text-green-500">21 days streak</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg border border-neutral-200/20 text-center order-1 md:order-2">
-            <div className="text-3xl mb-2">🥇</div>
-            <img src="https://avatar.iran.liara.run/public" alt="Second Place" className="w-20 h-20 rounded-full mx-auto mb-3"/>
-            <h3 className="font-semibold">Sarah Chen</h3>
-            <p className="text-neutral-600 text-sm mb-2">298 hours focused</p>
-            <p className="text-sm text-green-500">25 days streak</p>
-            </div>
-            <div className="bg-white p-6 rounded-lg border border-neutral-200/20 text-center order-1 md:order-3">
-            <div className="text-3xl mb-2">🥇</div>
-            <img src="https://avatar.iran.liara.run/public" alt="Second Place" className="w-20 h-20 rounded-full mx-auto mb-3"/>
-            <h3 className="font-semibold">Mike Johnson</h3>
-            <p className="text-neutral-600 text-sm mb-2">232 hours focused</p>
-            <p className="text-sm text-green-500">18 days streak</p>
-            </div>
+          <div className="leaderboard-actions">
+            <button className="button" disabled={joining} onClick={join}>
+              {joining ? 'Joining…' : 'Join leaderboard'}
+            </button>
+            <Link className="text-link" to="/dashboard/profile">
+              My preferences <ArrowUpRight size={17} />
+            </Link>
+          </div>
         </div>
-        <div className="bg-white rounded-lg border border-neutral-200/20">
-        <div className="p-4 border-b border-neutral-200/20">
-        <h2 className="text-lg font-semibold">Global Leaderboard</h2>
+      )}
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <h3>The growing community</h3>
+            <p className="muted">Completed focus sessions · periods use UTC</p>
+          </div>
+          <button
+            className="icon-button"
+            aria-label="Refresh leaderboard"
+            disabled={resource.loading}
+            onClick={resource.reload}
+          >
+            <RefreshCw size={18} />
+          </button>
         </div>
-        <div className="overflow-x-auto">
-            <table className="w-full">
-                <thead className="bg-neutral-50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Rank</th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-neutral-600">User</th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Focus Hours</th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Current Streak</th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-neutral-600">Trees Planted</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-200/20">
-                <tr className="bg-green-50">
-                    <td className="px-6 py-4 text-sm">4</td>
-                    <td className="px-6 py-4">
-                        <div className="flex items-center">
-                            <img src="https://avatar.iran.liara.run/public" alt="User" className="w-8 h-8 rounded-full"/>
-                            <span className="ml-2">David Lee</span>
-                        </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">225h</td>
-                    <td className="px-6 py-4 text-sm">16 days</td>
-                    <td className="px-6 py-4 text-sm">18</td>
-                </tr>
-
-                <tr className="bg-green-50">
-                    <td className="px-6 py-4 text-sm">5</td>
-                    <td className="px-6 py-4">
-                        <div className="flex items-center">
-                            <img src="https://avatar.iran.liara.run/public" alt="User" className="w-8 h-8 rounded-full"/>
-                            <span className="ml-2">Emma Wilson</span>
-                        </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">218h</td>
-                    <td className="px-6 py-4 text-sm">14 days</td>
-                    <td className="px-6 py-4 text-sm">15</td>
-                </tr>
-
-                <tr className="bg-green-50">
-                    <td className="px-6 py-4 text-sm">6</td>
-                    <td className="px-6 py-4">
-                        <div className="flex items-center">
-                            <img src="https://avatar.iran.liara.run/public" alt="User" className="w-8 h-8 rounded-full"/>
-                            <span className="ml-2">James Brown</span>
-                        </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">210h</td>
-                    <td className="px-6 py-4 text-sm">12 days</td>
-                    <td className="px-6 py-4 text-sm">14</td>
-                </tr>
-
-                </tbody>
-            </table>
-        </div>
-        <div className="p-4 border-t border-neutral-200/20 flex justify-center">
-        <nav className="flex space-x-2">
-            <button className="px-3 py-1 rounded-lg hover:bg-neutral-100" fdprocessedid="bj4y7">Previous</button>
-            <button className="px-3 py-1 rounded-lg bg-neutral-100" fdprocessedid="y7n2jm">1</button>
-            <button className="px-3 py-1 rounded-lg hover:bg-neutral-100" fdprocessedid="9x2l5p">2</button>
-            <button className="px-3 py-1 rounded-lg hover:bg-neutral-100" fdprocessedid="tnq9zd">3</button>
-            <button className="px-3 py-1 rounded-lg hover:bg-neutral-100" fdprocessedid="rlift8">Next</button>
-        </nav>
-        </div>
-        </div>
+        <Resource resource={resource}>
+          {(data) => (
+            <>
+              {page === 1 && <Champions rankings={data.rankings} />}
+              {data.rankings.length > 0 && (
+                <>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Rank</th>
+                          <th>Member</th>
+                          <th>Focus time</th>
+                          <th>Sessions</th>
+                          <th>Trees</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.rankings.map((r) => (
+                          <tr
+                            key={r._id}
+                            className={r._id === user.id ? 'own-row' : ''}
+                          >
+                            <td>
+                              <span className="rank">
+                                {String(r.rank).padStart(2, '0')}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="table-label">
+                                <span className="avatar">
+                                  {r.name.charAt(0)}
+                                </span>
+                                <span>
+                                  <strong>{r.name}</strong>
+                                  <small>@{r.username}</small>
+                                </span>
+                              </span>
+                            </td>
+                            <td>{minutes(r.minutes)}</td>
+                            <td>{number(r.sessions)}</td>
+                            <td>{number(r.trees)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination
+                    page={page}
+                    pages={data.pages}
+                    onChange={setPage}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </Resource>
       </section>
     </>
   );

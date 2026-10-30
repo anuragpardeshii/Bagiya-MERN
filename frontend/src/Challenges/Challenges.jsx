@@ -1,71 +1,161 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useAuth } from "../Dashboard/context/AuthContext";
-import Sidebar from "../Dashboard/Sidebar";
-
+import { useState, useRef, useEffect } from 'react';
+import { Trophy, Check, ArrowUpRight, Coins, Sprout, Sun } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useResource } from '../hooks/useResource';
+import { api, number } from '../lib/api';
+import { PageHeading, Resource, Empty } from '../components/UI';
+import { useAuth } from '../Dashboard/context/AuthContext';
 export default function Challenges() {
-  const [challenges, setChallenges] = useState([]);
-  const { user } = useAuth();
-
+  const resource = useResource('/challenges', { revalidateOnFocus: true });
+  const [busy, setBusy] = useState(null);
+  const guard = useRef(false);
+  const { refresh } = useAuth();
+  const resetsAt = resource.data?.challenges.find(
+    (item) => item.recurring,
+  )?.resetsAt;
+  const reload = resource.reload;
   useEffect(() => {
-    fetchChallenges();
-  }, []);
-
-  const fetchChallenges = async () => {
+    if (!resetsAt) return;
+    const timeout = setTimeout(
+      reload,
+      Math.max(1000, Date.parse(resetsAt) - Date.now() + 1000),
+    );
+    return () => clearTimeout(timeout);
+  }, [resetsAt, reload]);
+  async function redeem(id) {
+    if (guard.current) return;
+    guard.current = true;
+    setBusy(id);
     try {
-      // Changed from user-specific route to general challenges route
-      const response = await axios.get("http://localhost:3000/api/challenges");
-      setChallenges(response.data);
-    } catch (error) {
-      console.error("Error fetching challenges:", error);
-    }
-  };
-
-  const handleRedeem = async (challengeId) => {
-    try {
-      await axios.post(
-        `http://localhost:3000/api/challenges/redeem/${challengeId}`
+      const result = await api(`/challenges/redeem/${id}`, {
+        method: 'POST',
+        body: {},
+      });
+      toast.success(
+        result.replayed
+          ? 'Already collected. Come back tomorrow!'
+          : 'A little progress, rewarded. Coins added!',
       );
-      // Refresh challenges after redeeming
-      fetchChallenges();
-    } catch (error) {
-      console.error("Error redeeming challenge:", error);
+      resource.reload();
+      refresh();
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      guard.current = false;
+      setBusy(null);
     }
-  };
-
+  }
   return (
     <>
-      <Sidebar />
-      <div className="p-8 sm:ml-64 bg-[#e5e7eb] h-full">
-        <h1 className="text-3xl font-bold mb-8">Challenges</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {challenges.map((challenge) => (
-            <div
-              key={challenge._id}
-              className="bg-white rounded-lg shadow-md p-6"
-            >
-              <h2 className="text-xl font-semibold mb-2">{challenge.title}</h2>
-              <p className="text-gray-600 mb-4">{challenge.description}</p>
-              <div className="flex items-center justify-between">
-                <span className="text-yellow-500 font-bold">
-                  {challenge.coins} Coins
-                </span>
-                <button
-                  onClick={() => handleRedeem(challenge._id)}
-                  disabled={challenge.isRedeemed}
-                  className={`px-4 py-2 rounded-md ${
-                    challenge.isRedeemed
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-blue-500 hover:bg-blue-600 text-white"
-                  }`}
-                >
-                  {challenge.isRedeemed ? "Redeemed" : "Redeem"}
-                </button>
-              </div>
-            </div>
-          ))}
+      <PageHeading
+        eyebrow="LITTLE MILESTONES, LASTING HABITS"
+        title="Something to grow toward."
+        description="Gentle encouragement for your everyday focus."
+      >
+        <Link className="button secondary" to="/timer">
+          Make some progress <ArrowUpRight size={17} />
+        </Link>
+      </PageHeading>
+      <div className="challenge-banner">
+        <Trophy size={36} />
+        <div>
+          <h2>Progress deserves a little celebration.</h2>
+          <p>Complete a milestone, collect your coins, and keep on growing.</p>
         </div>
       </div>
+      <Resource resource={resource}>
+        {(data) => (
+          <div className="challenge-grid">
+            {!data.challenges.length && (
+              <Empty title="New milestones will take root here." link="/timer">
+                Keep making time for yourself. Your available challenges will
+                appear here.
+              </Empty>
+            )}
+            {data.challenges.map((c, i) => {
+              const goal = c.requiredMinutes || c.requiredSessions || 0,
+                progress = c.requiredMinutes
+                  ? data.stats.totalMinutes
+                  : data.stats.successfulSessions;
+              return (
+                <article
+                  className={`challenge-card ${c.recurring ? 'daily-challenge' : ''}`}
+                  key={c._id}
+                >
+                  <div className="challenge-top">
+                    <span className="round-icon">
+                      {c.isRedeemed ? (
+                        <Check />
+                      ) : c.recurring ? (
+                        <Sun />
+                      ) : (
+                        <Sprout />
+                      )}
+                    </span>
+                    <span className="eyebrow">
+                      {c.recurring
+                        ? 'A DAILY RITUAL'
+                        : `MILESTONE ${String(i).padStart(2, '0')}`}
+                    </span>
+                  </div>
+                  <h3>{c.title}</h3>
+                  <p className="muted">{c.description}</p>
+                  {c.recurring ? (
+                    <div className="daily-reward-status">
+                      <span>
+                        {c.isRedeemed
+                          ? 'Today’s visit has been rewarded.'
+                          : 'You’re here. Your daily reward is ready.'}
+                      </span>
+                      <small>A fresh reward every day at 00:00 UTC.</small>
+                    </div>
+                  ) : goal > 0 ? (
+                    <>
+                      <progress
+                        max={goal}
+                        value={Math.min(goal, progress)}
+                        aria-label={c.title}
+                      />
+                      <span className="progress-caption">
+                        {Math.min(goal, progress)} / {goal}{' '}
+                        {c.requiredMinutes ? 'minutes' : 'sessions'}
+                      </span>
+                    </>
+                  ) : (
+                    <p className="small-text muted">
+                      Legacy challenge · eligibility needs review
+                    </p>
+                  )}
+                  <div className="challenge-bottom">
+                    <span>
+                      <Coins size={17} />
+                      {number(c.coins)} coins
+                    </span>
+                    <button
+                      className={`button ${c.isRedeemed ? 'secondary' : ''}`}
+                      disabled={busy !== null || !c.eligible || c.isRedeemed}
+                      onClick={() => redeem(c._id)}
+                    >
+                      {busy === c._id
+                        ? 'Collecting…'
+                        : c.isRedeemed
+                          ? c.recurring
+                            ? 'Collected today'
+                            : 'Collected'
+                          : c.eligible
+                            ? c.recurring
+                              ? 'Collect 10 coins'
+                              : 'Collect reward'
+                            : 'In progress'}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </Resource>
     </>
   );
 }

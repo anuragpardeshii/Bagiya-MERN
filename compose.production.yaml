@@ -1,0 +1,33 @@
+# Use independently: docker compose -f compose.production.yaml --env-file .env.production up -d
+# External authenticated replica set and TLS reverse proxy are required.
+name: bagiya-production
+services:
+  migrate:
+    build: { context: ., target: api-production }
+    env_file: ${PRODUCTION_ENV_FILE:-.env.production}
+    command: [node, scripts/migrate.js, up]
+    restart: 'no'
+  api:
+    build: { context: ., target: api-production }
+    env_file: ${PRODUCTION_ENV_FILE:-.env.production}
+    environment: { NODE_ENV: production, PORT: 3000 }
+    restart: unless-stopped
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+  web:
+    build: { context: ., target: web-production }
+    ports: ['127.0.0.1:8080:8080']
+    restart: unless-stopped
+    depends_on:
+      api: { condition: service_healthy }

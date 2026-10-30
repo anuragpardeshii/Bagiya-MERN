@@ -1,10 +1,9 @@
-const express = require("express");
-const { getBalance, getUser, updateUser } = require("../controllers/userController");
-
-const router = express.Router();
-
-router.get("/balance/:userId", getBalance);
-router.get("/:userId", getUser);
-router.put("/:userId", updateUser);
-
+const router = require('express').Router();
+const { owner } = require('../middleware/authMiddleware');
+const { asyncRoute, validate } = require('../lib/http');
+const { profile } = require('../lib/validation');
+const c = require('../controllers/userController');
+router.get('/balance/:userId', owner, c.getBalance);
+router.get('/:userId', owner, c.getUser);
+router.put('/:userId', owner, validate(profile), asyncRoute(c.updateUser));
 module.exports = router;

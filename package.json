@@ -1,0 +1,27 @@
+{
+  "name": "bagiya",
+  "private": true,
+  "version": "2.0.0",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "test": "npm test --prefix backend",
+    "lint": "eslint backend frontend/src frontend/vite.config.js e2e playwright.config.js scripts extension extension-tests playwright.extension.config.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "npm run build --prefix frontend",
+    "test:e2e": "playwright test",
+    "extension:pack": "node scripts/package-extension.cjs",
+    "test:extension": "npm run extension:pack && playwright test -c playwright.extension.config.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.6.0",
+    "@playwright/test": "^1.56.0"
+  }
+}

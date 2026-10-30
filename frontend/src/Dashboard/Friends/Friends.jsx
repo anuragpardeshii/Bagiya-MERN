@@ -1,161 +1,190 @@
-import React, { useState } from "react";
-import { Trash2, Info } from "lucide-react";
-import Sidebar from "../Sidebar";
-
+import { useState, useRef } from 'react';
+import { Users, Search, UserPlus, Check, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { useResource } from '../../hooks/useResource';
+import { api } from '../../lib/api';
+import { PageHeading, Resource, Empty, Pagination } from '../../components/UI';
 export default function Friends() {
-  const [dropdownVisible, setDropdownVisible] = useState(null);
-  const toggleDropdown = (id) => {
-    setDropdownVisible(dropdownVisible === id ? null : id);
-  };
-
+  const { user } = useAuth();
+  const [page, setPage] = useState(1),
+    [results, setResults] = useState(null),
+    [error, setError] = useState(''),
+    [searching, setSearching] = useState(false),
+    [busy, setBusy] = useState(null);
+  const guard = useRef(false);
+  const resource = useResource(`/social/friends?page=${page}`);
+  async function search(e) {
+    e.preventDefault();
+    setSearching(true);
+    setError('');
+    try {
+      const q = new FormData(e.currentTarget).get('q');
+      setResults(
+        (await api(`/social/search?q=${encodeURIComponent(q)}`)).users,
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSearching(false);
+    }
+  }
+  async function mutate(id, method) {
+    if (guard.current) return;
+    guard.current = true;
+    setBusy(id);
+    try {
+      await api(`/social/friends/${id}`, {
+        method,
+        body: method === 'DELETE' ? undefined : {},
+      });
+      resource.reload();
+      if (method === 'POST') setResults((r) => r?.filter((v) => v._id !== id));
+      toast.success(
+        method === 'POST'
+          ? 'Friend request sent.'
+          : method === 'PATCH'
+            ? 'You’re now growing together.'
+            : 'Connection removed.',
+      );
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      guard.current = false;
+      setBusy(null);
+    }
+  }
   return (
     <>
-      <Sidebar />
-      <div className="p-4 sm:p-8 sm:ml-64 bg-[#e5e7eb] min-h-screen">
-        <div className="rounded-lg">
-          <div className="flex flex-wrap justify-between items-center pb-4 sm:pb-8">
-            <div>
-              <h1 className="text-2xl sm:text-3xl text-gray-700 font-bold">
-                Friends
-              </h1>
-            </div>
-            <div className="sm:gap-8 w-full lg:w-1/3">
-              <form className="max-w-xl gap-4 my-2 mx-auto">
-                <label
-                  htmlFor="default-search"
-                  className="mb-2 text-sm font-medium text-gray-900 sr-only"
-                >
-                  Search
-                </label>
-                <div className="relative">
-                  <input
-                    type="search"
-                    id="default-search"
-                    className="block w-full p-4 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Search friends by username..."
-                    required
-                  />
+      <PageHeading
+        eyebrow="GOOD COMPANY MAKES ROOM FOR GROWTH"
+        title="Grow alongside friends."
+        description="Find your people. Encourage their little beginnings."
+      />
+      <section className="panel search-panel">
+        <div>
+          <h3>A familiar name?</h3>
+          <p className="muted">
+            Search by the first few letters of a username.
+          </p>
+        </div>
+        <form className="search-form" onSubmit={search}>
+          <label className="sr-only" htmlFor="friend-search">
+            Search usernames
+          </label>
+          <Search size={18} />
+          <input
+            id="friend-search"
+            name="q"
+            placeholder="Find a friend…"
+            required
+            minLength={2}
+            maxLength={30}
+            pattern="[A-Za-z0-9_]{2,30}"
+          />
+          <button className="button" disabled={searching}>
+            {searching ? 'Searching…' : 'Search'}
+          </button>
+        </form>
+        {error && (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        )}
+      </section>
+      {results && (
+        <section className="panel">
+          <h3>People we found</h3>
+          {results.length ? (
+            <div className="people-grid">
+              {results.map((p) => (
+                <article className="person" key={p._id}>
+                  <span className="avatar">{p.name.charAt(0)}</span>
+                  <div>
+                    <strong>{p.name}</strong>
+                    <span>@{p.username}</span>
+                  </div>
                   <button
-                    type="submit"
-                    className="text-white absolute end-2.5 bottom-2.5 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm bg-gray-50 px-2 py-2"
+                    className="icon-button"
+                    aria-label={`Add ${p.username}`}
+                    disabled={busy !== null}
+                    onClick={() => mutate(p._id, 'POST')}
                   >
-                    <svg
-                      className="w-4 h-4 text-gray-500"
-                      aria-hidden="true"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
-                      />
-                    </svg>
+                    <UserPlus size={19} />
                   </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
-          {/* Suggested Friends Section */}
-          <div className="bg-white rounded-lg shadow-sm flex-1 p-4 sm:p-6">
-            <h2 className="text-xl font-semibold mb-4 ms-2">
-              Suggested Friends
-            </h2>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((id) => (
-                <div key={id} className="bg-gray-50 px-2 py-2 rounded-lg">
-                  <div className="flex justify-around items-center">
-                    <img
-                      src="/avatar1.png"
-                      className="w-16 h-16 rounded-lg"
-                      alt="User Avatar"
-                    />
-                    <div>
-                      <p>Anurag Pardeshi</p>
-                      <p>156 hours focused</p>
-                    </div>
-                    <button
-                      type="button"
-                      className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-1.5 focus:outline-none"
-                    >
-                      Add Friend
-                    </button>
-                  </div>
-                </div>
+                </article>
               ))}
             </div>
+          ) : (
+            <Empty title="No matching members.">
+              Try another username or invite your friend to create an account.
+            </Empty>
+          )}
+        </section>
+      )}
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <h3>Your growing circle</h3>
+            <p className="muted">Friends and pending requests.</p>
           </div>
+          <Users size={22} />
         </div>
-
-        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8 mt-8">
-          {/* Friends List Section */}
-          <div className="bg-white rounded-lg shadow-sm flex-1 p-4 sm:p-6">
-            <h2 className="text-xl font-semibold mb-4 ms-2">Friends List</h2>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3, 4, 5, 6].map((id) => (
-                <div key={id} className="bg-gray-50 px-2 py-2 rounded-lg">
-                  <div className="flex justify-around items-center">
-                    <img
-                      src="/avatar1.png"
-                      className="w-16 h-16 rounded-lg"
-                      alt="User Avatar"
-                    />
-                    <div>
-                      <p>Anurag Pardeshi</p>
-                      <p>156 hours focused</p>
-                    </div>
-                    <button
-                      onClick={() => toggleDropdown(id)}
-                      className="inline-flex items-center p-2 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-50"
-                      type="button"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="currentColor"
-                        viewBox="0 0 16 3"
-                      >
-                        <path d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z" />
-                      </svg>
-                    </button>
-                    {dropdownVisible === id && (
-                      <div className="z-10 absolute bg-white divide-y divide-gray-100 rounded-lg shadow-sm w-44">
-                        <ul
-                          className="py-2 text-sm text-gray-700"
-                          aria-labelledby="dropdownMenuIconHorizontalButton"
+        <Resource resource={resource}>
+          {(data) =>
+            data.friends.length ? (
+              <>
+                <div className="people-grid">
+                  {data.friends.map((f) => {
+                    const incoming = f.recipient?._id === user.id,
+                      person = incoming ? f.requester : f.recipient;
+                    if (!person) return null;
+                    return (
+                      <article className="person" key={f._id}>
+                        <span className="avatar">{person.name.charAt(0)}</span>
+                        <div>
+                          <strong>{person.name}</strong>
+                          <span>@{person.username}</span>
+                          <small>
+                            {f.status === 'accepted'
+                              ? 'Growing together'
+                              : incoming
+                                ? 'Wants to be friends'
+                                : 'Request sent'}
+                          </small>
+                        </div>
+                        {incoming && f.status === 'pending' && (
+                          <button
+                            className="icon-button"
+                            aria-label={`Accept ${person.username}`}
+                            disabled={busy !== null}
+                            onClick={() => mutate(f._id, 'PATCH')}
+                          >
+                            <Check size={18} />
+                          </button>
+                        )}
+                        <button
+                          className="icon-button"
+                          aria-label={`${f.status === 'accepted' ? 'Remove' : 'Cancel'} ${person.username}`}
+                          disabled={busy !== null}
+                          onClick={() => mutate(f._id, 'DELETE')}
                         >
-                          <li>
-                            <button
-                              className="block flex px-4 font-bold py-2 text-md text-red-600 items-center hover:bg-gray-100"
-                            >
-                              <Trash2 className="w-5 mx-1" /> Remove Friend
-                            </button>
-                          </li>
-                          <li>
-                            <button
-                              className="block flex items-center px-4 py-2 font-medium text-md text-blue-400 hover:bg-gray-100"
-                            >
-                              <Info className="w-5 mx-1" />
-                              About
-                            </button>
-                          </li>
-                        </ul>
-                      </div>
-                    )}
-                  </div>
+                          <X size={18} />
+                        </button>
+                      </article>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+                <Pagination page={page} pages={data.pages} onChange={setPage} />
+              </>
+            ) : (
+              <Empty title="There’s room for good company.">
+                Search for a friend to send your first request.
+              </Empty>
+            )
+          }
+        </Resource>
+      </section>
     </>
   );
 }

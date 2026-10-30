@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bagiya Strict Focus</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">BAGIYA · STRICT FOCUS</p>
+      <h1>A little room to focus.</h1>
+      <p id="status" role="status">Connecting…</p>
+      <form id="connection">
+        <label for="origin">Your Bagiya address</label
+        ><input
+          id="origin"
+          type="url"
+          required
+          placeholder="http://localhost:5179"
+        /><button>Connect to Bagiya</button>
+      </form>
+      <p id="error" role="alert"></p>
+      <p class="note">
+        Choose allowed websites in your timer before starting. Other websites, a
+        locked screen or leaving the browser interrupt Strict focus. Monitoring
+        gaps of 90 seconds end the session without coins.
+      </p>
+      <p class="note">
+        Only the allowed list and interruption reason go to Bagiya. Your
+        browsing history stays private.
+      </p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

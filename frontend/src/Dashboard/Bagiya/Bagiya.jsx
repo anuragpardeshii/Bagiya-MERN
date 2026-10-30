@@ -1,204 +1,163 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Trees, Coins } from "lucide-react";
-import Sidebar from "../Sidebar";
-import axios from "axios";
-import Calender from "./Calendar";
-import { useAuth } from "../context/AuthContext";
-import toast from "react-hot-toast";
-
-const generateContributions = () => {
-  const contributions = [];
-  const today = new Date();
-  for (let i = 0; i < 365; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    contributions.unshift({
-      date,
-      count: Math.floor(Math.random() * 5), // 0-4 contributions
-    });
-  }
-  return contributions;
-};
-
+import { useState, useRef } from 'react';
+import { Coins, Trees, ArrowUpRight, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
+import { useResource } from '../../hooks/useResource';
+import { api, number, dateTime } from '../../lib/api';
+import {
+  PageHeading,
+  Resource,
+  Empty,
+  Pagination,
+  PlantArt,
+} from '../../components/UI';
+import Calendar from './Calendar';
 export default function Bagiya() {
-  const contributions = useMemo(() => generateContributions(), []);
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [balance, setBalance] = useState(null);
-  const [trees, setTrees] = useState(null);
-  const [recent, setRecent] = useState(null);
-
-  useEffect(() => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
+  const { user, refresh } = useAuth();
+  const [page, setPage] = useState(1),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  const guard = useRef(false);
+  const wallet = useResource(`/users/balance/${user.id}`),
+    history = useResource(`/transactions/${user.id}?page=${page}&limit=6`);
+  async function plant() {
+    if (guard.current) return;
+    guard.current = true;
+    setBusy(true);
+    setError('');
+    const key = `bagiya:plant:${user.id}`;
+    let requestId = sessionStorage.getItem(key);
+    if (!requestId) {
+      requestId = crypto.randomUUID();
+      sessionStorage.setItem(key, requestId);
     }
-
-    const controller = new AbortController();
-    let isMounted = true; // ✅ Track if the component is still mounted
-    const fetchBalance = async () => {
-      try {
-        const response = await axios.get(
-          `http://localhost:3000/api/users/balance/${user.id}`,
-          { signal: controller.signal }
-        );
-
-        if (isMounted) {
-          setBalance(response.data.balance);
-          setTrees(response.data.trees);
-        }
-      } catch (err) {
-        if (axios.isCancel(err)) {
-          // console.log("✅ Request was canceled by cleanup.");
-        } else {
-          // console.error("❌ Failed to fetch balance:", err);
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    fetchBalance();
-
-    return () => {
-      isMounted = false; // ✅ Prevent state update after unmount
-      controller.abort(); // ✅ Cleanup
-    };
-  }, [user?.id]);
-
-  const recentTransactions = async () => {
     try {
-      const response = await axios.get(`http://localhost:3000/api/transactions/${user?.id}`);
-      if (response.status === 200) {
-        console.log("Recent transactions fetched successfully", response.data);
-        setRecent(response.data.transactions);
-      } else {
-        console.log("Failed to fetch recent transactions");
-      }
-    } catch (error) {
-      console.error("Error fetching recent transactions:", error);
-    }
-  };
-
-  useEffect(() => {
-    recentTransactions();
-  }, []);
-
-  const handlePlantTree = async () => {
-    if (!user?.id) return;
-    
-    try {
-      setLoading(true);
-      const response = await axios.post('http://localhost:3000/api/transactions/spend', {
-        userId: user.id,
-        amount: 2500,
-        type: 'TREE_PLANTING'
+      const result = await api('/transactions/spend', {
+        method: 'POST',
+        body: { type: 'TREE_PLANTING', requestId },
       });
-
-      if (response.data.success) {
-        setBalance(response.data.balance);
-        setTrees(response.data.trees);
-        toast.success("Congratulations! You've successfully planted a tree 🌱")
-      }
-    } catch (error) {
-      console.error('Failed to plant tree:', error);
-      toast.failure('Failed to plant tree. Please try again.');
+      sessionStorage.removeItem(key);
+      wallet.setData(result);
+      history.reload();
+      refresh();
+      toast.success('Your garden has a new little tree.');
+    } catch (e) {
+      setError(e.message);
+      if (e.status && e.status < 500) sessionStorage.removeItem(key);
     } finally {
-      setLoading(false);
+      guard.current = false;
+      setBusy(false);
     }
-  };
-
-  const colors = [
-    "bg-gray-100",
-    "bg-green-200",
-    "bg-green-300",
-    "bg-green-400",
-    "bg-green-500",
-  ];
-
+  }
   return (
     <>
-      <Sidebar />
-      <div className="p-8 sm:ml-64 bg-[#e5e7eb] h-full">
-        <div className="rounded-lg dark:border-gray-700">
-          <h1 className="text-3xl text-gray-700 font-bold ms-2 mb-8">Bagiya</h1>
-          <div className="grid grid-cols-3 gap-8 mb-8">
-            <div className="bg-white rounded-xl shadow-sm p-8">
-              <p className="text-lg text-gray-600">Total Trees planted</p>
-              <h2 className="text-2xl text-gray-700 font-bold">
-                {trees ?? 0}
+      <PageHeading
+        eyebrow="ROOTED IN YOUR EVERYDAY"
+        title="Your little garden."
+        description="A living reminder of the time you made for yourself."
+      >
+        <Link className="button secondary" to="/timer">
+          Earn more coins <ArrowUpRight size={17} />
+        </Link>
+      </PageHeading>
+      <Resource resource={wallet}>
+        {(data) => (
+          <section className="garden-hero">
+            <div>
+              <span className="pill">
+                <Trees size={15} /> YOUR VIRTUAL GARDEN
+              </span>
+              <h2>
+                {data.trees
+                  ? `${number(data.trees)} little ${data.trees === 1 ? 'reason' : 'reasons'} to keep growing.`
+                  : 'Every garden starts with a little seed.'}
               </h2>
-              {/* <p className="text-[green] font-medium text-md">+3 this month</p> */}
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-8">
-              <p className="text-lg text-gray-600">Current Streak</p>
-              <h2 className="text-2xl text-gray-700 font-bold">15 days</h2>
-              <p className="text-[green] font-medium text-md">Best: 21 dats</p>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm p-8">
-              <p className="text-lg text-gray-600">Total Focus hours</p>
-              <h2 className="text-2xl text-gray-700 font-bold">126 hr</h2>
-              <p className="text-[green] font-medium text-md">+12h this week</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-8">
-            <section className="relative">
-              <Calender/>
-            </section>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-8 mt-8">
-            <h3 className="text-xl font-semibold mb-4 ms-2">Plant a Tree</h3>
-            <div className="bg-green-50 p-6 rounded-lg">
-              <p className="text-green-800 mb-4">
-                You have <span className="font-bold">{balance ?? 0} coins</span>{" "}
-                available. Each tree costs 2,500 coins to plant.
+              <p>
+                Plant a virtual tree with the coins you earn from focusing. A
+                little more green, a little more you.
               </p>
+              <p className="tree-count">
+                {number(data.trees)} {data.trees === 1 ? 'tree' : 'trees'}{' '}
+                planted
+              </p>
+              <div className="garden-wallet">
+                <span>
+                  <Coins size={21} />
+                  <strong>{number(data.balance)}</strong> coins available
+                </span>
+              </div>
               <button
-                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400"
-                aria-label="Plant a tree using 2,500 coins"
-                onClick={handlePlantTree}
-                disabled={loading || !balance || balance < 2500}
+                className="button"
+                onClick={plant}
+                disabled={busy || data.balance < 2500}
               >
-                {loading ? "Planting..." : `Plant a Tree (2,500 coins)`}
+                <Plus size={17} />
+                {busy ? 'Planting…' : 'Plant a tree · 2,500 coins'}
               </button>
+              {data.balance < 2500 && (
+                <p className="muted small-text">
+                  {number(2500 - data.balance)} more coins until your next tree.
+                </p>
+              )}
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-8 mt-8">
-            <h2 className="text-xl font-semibold mb-4 ms-2">
-              Recent Activities
-            </h2>
-            <div className="gap-4">
-              {recent?.slice(0, 5).map((transaction, index) => (
-                <div key={index} className="flex justify-between items-center bg-gray-50 mb-4 p-4 rounded-lg">
-                  <div className="flex items-center">
-                    {transaction.type === 'earn' ? (
-                      <Coins size={40} color="green" className="me-2" />
-                    ) : (
-                      <Trees size={40} color="green" className="me-2" />
-                    )}
-                    <div>
-                      <h2 className="text-md text-gray-600 font-medium">
-                        {transaction.type === 'spend' ? 'Tree Planted' : 'Coins Earned'}
-                      </h2>
-                      <p className="text-sm text-gray-700">
-                        {new Date(transaction.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <h2>{transaction.amount > 0 ? `+${transaction.amount}` : transaction.amount} coins</h2>
-                    <p className="text-[green]">{transaction.description}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="garden-art">
+              <PlantArt />
             </div>
+          </section>
+        )}
+      </Resource>
+      <Calendar />
+      <section className="panel history-panel">
+        <div className="panel-heading">
+          <div>
+            <h3>Your garden journal</h3>
+            <p className="muted">Every coin earned. Every tree planted.</p>
           </div>
+          <Coins size={22} />
         </div>
-      </div>
+        <Resource resource={history}>
+          {(data) =>
+            data.transactions.length ? (
+              <>
+                <div className="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Moment</th>
+                        <th>Date</th>
+                        <th>Coins</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.transactions.map((t) => (
+                        <tr key={t._id}>
+                          <td>{t.reference || 'Legacy wallet activity'}</td>
+                          <td>{dateTime(t.createdAt)}</td>
+                          <td className={t.amount > 0 ? 'positive' : 'muted'}>
+                            {t.amount > 0 ? '+' : ''}
+                            {number(t.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination page={page} pages={data.pages} onChange={setPage} />
+              </>
+            ) : (
+              <Empty title="Your story is just beginning." link="/timer">
+                Complete a focus session to earn your first coins.
+              </Empty>
+            )
+          }
+        </Resource>
+      </section>
     </>
   );
 }

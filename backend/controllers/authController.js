@@ -1,98 +1,70 @@
-const bcrypt = require("bcryptjs");
-const User = require("../models/User");
-
-// Signup Controller
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+const { HttpError } = require('../lib/http');
+const { safeUser } = require('../services/users');
+const { normalizePhone } = require('../lib/identity');
+const { claimDailyLogin } = require('../services/dailyLogin');
 const signup = async (req, res) => {
-  try {
-    const { name, username, phone, email, password } = req.body;
-
-    // Validate required fields
-    if (!name || !username || !phone || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    // Check if user already exists (by email OR username)
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "Email or Username already exists" });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Save user to database
-    const newUser = new User({
-      name,
-      username,
-      phone,
-      email,
-      password: hashedPassword,
-    });
-
-    await newUser.save();
-
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (error) {
-    console.error("Signup Error:", error);
-    res.status(500).json({ message: "Server error" });
-  }
+  const password = await bcrypt.hash(req.body.password, 12);
+  await User.create({
+    ...req.body,
+    password,
+    phoneNormalized: normalizePhone(req.body.phone),
+  });
+  res.status(201).json({ message: 'Account created. You can now sign in.' });
 };
-
-// Login Controller
+// A valid dummy hash keeps missing-user requests on the same password-comparison path.
+const dummyHash = bcrypt.hashSync('not-a-user-password', 12);
 const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: "User not found" });
-    }
-
-    // Compare passwords
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
-
-    // Store user session
-    req.session.user = { id: user._id, name: user.name, email: user.email, createdAt: user.createdAt, username: user.username, phone: user.phone, updatedAt: user.updatedAt };
-
-    res.cookie("auth", "true", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
-    });
-
-    res.json({ message: "Login successful", user: req.session.user });
-  } catch (error) {
-    console.error("Login Error:", error);
-    res.status(500).json({ message: "Server Error" });
-  }
-};
-
-// Check Authentication Controller
-const checkAuth = (req, res) => {
-    console.log("Session data:", req.session); // Debugging step
-    if (!req.session.user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    res.json(req.session.user);
-  };
-  
-
-// Logout Controller
-const logout = (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ message: "Logout failed" });
-    }
-
-    res.clearCookie("connect.sid", { path: "/" }); // Adjust the cookie name if necessary
-    return res.json({ message: "Logout successful" });
+  const identifier = (req.body.identifier || req.body.email).toLowerCase();
+  const phone = normalizePhone(identifier);
+  const query = identifier.includes('@')
+    ? { email: identifier }
+    : {
+        $or: [
+          { username: identifier },
+          ...(phone ? [{ phoneNormalized: phone }] : []),
+        ],
+      };
+  // Shared legacy numbers and numeric-username collisions must never choose an arbitrary account.
+  const matches = await User.find(query).select('+password').limit(2);
+  const user = matches.length === 1 ? matches[0] : null;
+  const valid = await bcrypt.compare(
+    req.body.password,
+    user?.password || dummyHash,
+  );
+  if (!user || !valid)
+    throw new HttpError(
+      401,
+      'Sign-in details are incorrect. If your phone number is shared, use your email or username.',
+    );
+  const dailyReward = await claimDailyLogin(user._id);
+  await new Promise((resolve, reject) =>
+    req.session.regenerate((error) => (error ? reject(error) : resolve())),
+  );
+  req.session.userId = String(user._id);
+  await new Promise((resolve, reject) =>
+    req.session.save((error) => (error ? reject(error) : resolve())),
+  );
+  res.json({
+    user: safeUser(await User.findById(user._id)),
+    dailyReward: {
+      coins: dailyReward.replayed ? 0 : 10,
+      resetsAt: dailyReward.resetsAt,
+    },
   });
 };
-
+const checkAuth = (req, res) => res.json(safeUser(req.user));
+const logout = async (req, res) => {
+  await new Promise((resolve, reject) =>
+    req.session.destroy((error) => (error ? reject(error) : resolve())),
+  );
+  res.clearCookie('bagiya.sid', {
+    path: '/',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: req.app.locals.production,
+  });
+  res.json({ message: 'Signed out' });
+};
 module.exports = { signup, login, checkAuth, logout };

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env*.example
+coverage/
+playwright-report/
+test-results/
+backups/
+*.log
+
+# Generated from extension sources and the shared URL policy.
+extension/focus-policy.js
+frontend/public/downloads/bagiya-focus-extension.zip

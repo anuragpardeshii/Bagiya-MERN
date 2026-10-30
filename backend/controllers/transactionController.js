@@ -1,161 +1,67 @@
-const User = require("../models/User");
-const Transaction = require("../models/transaction");
-
-const rewardUser = async (req, res) => {
-  try {
-    const { userId, amount } = req.body;
-
-    if (!userId || !amount) {
-      return res.status(400).json({ 
-        success: false,
-        message: "User ID and amount are required" 
-      });
-    }
-
-    if (amount <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Amount must be greater than 0"
-      });
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false,
-        message: "User not found" 
-      });
-    }
-
-    // Ensure wallet exists
-    if (!user.wallet) {
-      user.wallet = { balance: 0, transactions: [] };
-    }
-
-    // Create transaction
-    const transaction = new Transaction({
-      user: user._id,
-      amount: amount,
-      type: 'earn',
-      description: 'Reward earned'
-    });
-    await transaction.save();
-
-    // Update user wallet
-    user.wallet.balance += amount;
-    if (!user.wallet.transactions) {
-      user.wallet.transactions = [];
-    }
-    user.wallet.transactions.push(transaction._id);
-    await user.save();
-
-    res.json({
-      success: true,
-      message: "Coins rewarded successfully",
-      balance: user.wallet.balance,
-      transaction: transaction
-    });
-  } catch (error) {
-    console.error("Error in rewardUser:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Internal server error",
-      error: error.message 
-    });
-  }
-};
-
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Transaction = require('../models/transaction');
+const { HttpError, pagination } = require('../lib/http');
+const TREE_PRICE = 2500;
+async function purchaseTree(userId, requestId) {
+  return mongoose.connection.transaction(async (session) => {
+    const prior = await Transaction.findOne({
+      user: userId,
+      requestId: `tree:${requestId}`,
+    }).session(session);
+    if (prior) return { transaction: prior, replayed: true };
+    const user = await User.findOneAndUpdate(
+      { _id: userId, 'wallet.balance': { $gte: TREE_PRICE } },
+      { $inc: { 'wallet.balance': -TREE_PRICE, 'wallet.trees': 1 } },
+      { new: true, session },
+    );
+    if (!user) throw new HttpError(409, 'You need 2,500 coins to plant a tree');
+    const [transaction] = await Transaction.create(
+      [
+        {
+          user: userId,
+          type: 'spend',
+          amount: -TREE_PRICE,
+          reference: 'Virtual tree planted',
+          requestId: `tree:${requestId}`,
+        },
+      ],
+      { session },
+    );
+    return { transaction, replayed: false };
+  });
+}
 const spendCoins = async (req, res) => {
-  const { userId, amount, type } = req.body;
-
-  if (!userId || !amount) {
-    return res.status(400).json({ 
-      success: false,
-      message: "User ID and amount are required" 
-    });
-  }
-
-  if (amount <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: "Amount must be greater than 0"
-    });
-  }
-
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "User not found" 
-      });
-    }
-
-    if (!user.wallet || user.wallet.balance < amount) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Insufficient balance" 
-      });
-    }
-
-    // Create transaction
-    const transaction = new Transaction({
-      user: user._id,
-      amount: -amount,
-      type: 'spend',
-      description: type || 'Coin spend'
-    });
-    await transaction.save();
-
-    // Update user wallet
-    user.wallet.balance -= amount;
-    if (type === 'TREE_PLANTING') {
-      user.wallet.trees = (user.wallet.trees || 0) + 1;
-    }
-    
-    if (!user.wallet.transactions) {
-      user.wallet.transactions = [];
-    }
-    user.wallet.transactions.push(transaction._id);
-    await user.save();
-
-    res.json({
-      success: true,
-      balance: user.wallet.balance,
-      trees: user.wallet.trees,
-      transaction: transaction
-    });
-  } catch (error) {
-    console.error("Error in spendCoins:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: "Internal server error",
-      error: error.message 
-    });
-  }
+  const result = await purchaseTree(req.user._id, req.body.requestId);
+  const user = await User.findById(req.user._id).select('wallet').lean();
+  res.json({
+    ...result,
+    balance: user.wallet.balance,
+    trees: user.wallet.trees,
+  });
 };
-
+const rewardUser = (req, res) =>
+  res.status(410).json({
+    message:
+      'Coins are awarded automatically when eligible sessions or challenges complete',
+  });
 const getTransactions = async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    
-    if (!userId) {
-      return res.status(400).json({ success: false, message: "User ID is required" });
-    }
-
-    const transactions = await Transaction.find({ user: userId }).populate('user', 'name email');
-    
-    if (!transactions) {
-      return res.status(404).json({ success: false, message: "No transactions found" });
-    }
-
-    res.json({
-      success: true,
-      transactions: transactions
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+  const { page, limit, skip } = pagination(req.query),
+    query = { user: req.user._id };
+  const [transactions, total] = await Promise.all([
+    Transaction.find(query)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Transaction.countDocuments(query),
+  ]);
+  res.json({ transactions, page, total, pages: Math.ceil(total / limit) });
 };
-
-module.exports = { rewardUser, spendCoins, getTransactions };
+module.exports = {
+  spendCoins,
+  rewardUser,
+  getTransactions,
+  purchaseTree,
+  TREE_PRICE,
+};

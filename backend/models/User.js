@@ -1,25 +1,24 @@
-const mongoose = require("mongoose");
-
-const userSchema = new mongoose.Schema(
+const mongoose = require('mongoose');
+const schema = new mongoose.Schema(
   {
-    name: { type: String },
-    username: { type: String, unique: true, required: true },
-    email: { type: String, unique: true, required: true },
-    phone: { type: String, required: true }, // String for better compatibility
-    password: { type: String, required: true },
-    profilePicture: { type: String },
-    bio: { type: String },
-    dob: { type: Date },
+    name: { type: String, required: true },
+    username: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    phoneNormalized: String,
+    password: { type: String, required: true, select: false },
+    profilePicture: String,
+    bio: { type: String, default: '' },
+    dob: Date,
+    rankingOptIn: { type: Boolean, default: false },
     wallet: {
-      balance: { type: Number, default: 0 }, // User's coin balance
-      trees: { type: Number, default: 0 }, // trees planted
+      balance: { type: Number, default: 0, min: 0 },
+      trees: { type: Number, default: 0, min: 0 },
       transactions: [
-        { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
+        { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
       ],
     },
   },
-  { timestamps: true }
+  { timestamps: true, autoIndex: false },
 );
-
-const User = mongoose.model("User", userSchema);
-module.exports = User;
+module.exports = mongoose.model('User', schema);

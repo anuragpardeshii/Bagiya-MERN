@@ -1,10 +1,12 @@
-const express = require("express");
-const { rewardUser, spendCoins, getTransactions } = require("../controllers/transactionController");
-
-const router = express.Router();
-
-router.post("/reward", rewardUser);
-router.post("/spend", spendCoins);
-router.get("/:userId", getTransactions);
-
+const router = require('express').Router();
+const c = require('../controllers/transactionController');
+const { asyncRoute, validate } = require('../lib/http');
+const { owner } = require('../middleware/authMiddleware');
+router.post('/reward', c.rewardUser);
+router.post(
+  '/spend',
+  validate(require('../lib/validation').purchase),
+  asyncRoute(c.spendCoins),
+);
+router.get('/:userId', owner, asyncRoute(c.getTransactions));
 module.exports = router;

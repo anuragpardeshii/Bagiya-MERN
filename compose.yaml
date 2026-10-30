@@ -1,0 +1,82 @@
+name: bagiya
+services:
+  mongo:
+    image: mongo:7
+    command: [mongod, --replSet, rs0, --bind_ip_all]
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          'mongosh --quiet --eval ''try { rs.status().ok } catch (e) { rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo:27017"}]}) }'' && mongosh --quiet --eval ''if (!db.hello().isWritablePrimary) quit(1)'' ',
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    networks: [bagiya]
+  migrate:
+    build: { context: ., target: api-dev }
+    env_file: .env
+    environment:
+      MONGO_URI: mongodb://mongo:27017/bagiya?replicaSet=rs0
+    command: [npm, run, migrate]
+    depends_on:
+      mongo: { condition: service_healthy }
+    networks: [bagiya]
+  api:
+    build: { context: ., target: api-dev }
+    env_file: .env
+    environment:
+      PORT: 3000
+      MONGO_URI: mongodb://mongo:27017/bagiya?replicaSet=rs0
+    ports: ['127.0.0.1:${PORT:-3000}:3000']
+    volumes:
+      - ./backend:/app/backend
+      - api-modules:/app/backend/node_modules
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:3000/api/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [bagiya]
+  web:
+    build: { context: ., target: web-dev }
+    environment:
+      API_PROXY_TARGET: http://api:3000
+      VITE_POLLING: 'true'
+      VITE_CACHE_DIR: /tmp/bagiya-vite
+    ports: ['127.0.0.1:${WEB_PORT:-5173}:5173']
+    volumes:
+      - ./frontend:/app/frontend
+      - ./extension:/app/extension
+      - ./scripts/package-extension.cjs:/app/scripts/package-extension.cjs:ro
+      - ./backend/lib/focusPolicy.js:/app/backend/lib/focusPolicy.js:ro
+      - web-modules:/app/frontend/node_modules
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://localhost:5173').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [bagiya]
+volumes:
+  mongo-data:
+  api-modules:
+  web-modules:
+networks:
+  bagiya:

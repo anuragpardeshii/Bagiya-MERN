@@ -1,8 +1,5 @@
-# React + Vite
+# Bagiya frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+See the [root README](../README.md) and [development guide](../docs/DEVELOPMENT.md) for installation, API proxy configuration, Docker and tests.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+React/Vite source lives in `src/`; shared visual tokens and responsive styles live in `src/index.css`.

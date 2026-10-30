@@ -1,0 +1,96 @@
+name: Quality gates
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+      - run: make install
+      - run: make format-check lint test build
+        env:
+          NODE_ENV: test
+      - run: npm audit --audit-level=high && npm audit --prefix backend --audit-level=high && npm audit --prefix frontend --audit-level=high
+      - name: Start disposable replica set
+        run: |
+          docker run -d --name bagiya-ci-mongo -p 127.0.0.1:27028:27017 mongo:7 mongod --replSet rs0 --bind_ip_all
+          for attempt in $(seq 1 30); do
+            if docker exec bagiya-ci-mongo mongosh --quiet --eval 'db.adminCommand({ping:1})'; then break; fi
+            sleep 1
+          done
+          docker exec bagiya-ci-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"localhost:27017"}]})'
+          for attempt in $(seq 1 30); do
+            if docker exec bagiya-ci-mongo mongosh --quiet --eval 'if (!db.hello().isWritablePrimary) quit(1)'; then break; fi
+            sleep 1
+          done
+      - run: make test-integration
+        env:
+          NODE_ENV: test
+          TEST_MONGO_URI: mongodb://127.0.0.1:27028/?replicaSet=rs0&directConnection=true
+      - run: npx playwright install --with-deps chromium
+      - name: Start isolated browser environment
+        run: |
+          node backend/scripts/migrate.js up
+          node backend/index.js > /tmp/bagiya-api.log 2>&1 &
+          npm run dev --prefix frontend > /tmp/bagiya-web.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail http://localhost:5173/api/ready; then break; fi
+            sleep 1
+          done
+        env:
+          NODE_ENV: test
+          PORT: 3000
+          ENABLE_MILESTONE_CHALLENGES: 'true'
+          CLIENT_ORIGIN: http://localhost:5173
+          SESSION_SECRET: ci-only-session-secret-at-least-32-characters
+          MONGO_URI: mongodb://127.0.0.1:27028/bagiya_test_browser?replicaSet=rs0&directConnection=true
+      - run: make test-e2e
+        env:
+          E2E_TEST_MONGO_URI: mongodb://127.0.0.1:27028/bagiya_test_browser?replicaSet=rs0&directConnection=true
+      - name: Test the real Strict Focus extension
+        run: npm run test:extension
+        env:
+          E2E_BASE_URL: http://localhost:5173
+          E2E_TEST_MONGO_URI: mongodb://127.0.0.1:27028/bagiya_test_browser?replicaSet=rs0&directConnection=true
+      - name: Verify development Compose and migrations
+        run: |
+          cp .env.example .env
+          sed -i 's/PORT=3000/PORT=3012/; s/WEB_PORT=5173/WEB_PORT=5179/; s@http://localhost:5173@http://localhost:5179@' .env
+          docker compose config --quiet
+          PORT=3012 WEB_PORT=5179 CLIENT_ORIGIN=http://localhost:5179 make dev-up
+          make migrate-status
+          PRODUCTION_ENV_FILE=.env.production.example docker compose -f compose.production.yaml config --quiet
+      - run: make prod-build
+      - name: Smoke-test production frontend
+        run: |
+          docker run -d --name bagiya-ci-production --network bagiya_bagiya -p 127.0.0.1:5182:8080 bagiya-web:local
+          for attempt in $(seq 1 20); do
+            if curl --fail http://localhost:5182/dashboard; then break; fi
+            sleep 1
+          done
+          curl --fail http://localhost:5182/dashboard > /dev/null
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: |
+            playwright-report/
+            test-results/
+      - name: Stop disposable services
+        if: always()
+        run: |
+          docker rm -f bagiya-ci-production
+          docker compose down
+          docker rm -f bagiya-ci-mongo

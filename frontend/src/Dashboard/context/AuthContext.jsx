@@ -1,59 +1,55 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
-import axios from "axios";
-
-const AuthContext = createContext();
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // ✅ Hook to navigate
-
-  const BACKEND_URL = "http://localhost:3000/api/auth"; // ✅ Consistent API path
-
-  const login = () => {
-    window.location.href = `${BACKEND_URL}/login`;
-  };
-
-  const logout = async () => {
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react';
+import { api } from '../../lib/api';
+import toast from 'react-hot-toast';
+const AuthContext = createContext(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null),
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState('');
+  const refresh = useCallback(async () => {
+    setError('');
     try {
-      await axios.get(`${BACKEND_URL}/logout`, { withCredentials: true });
-      setUser(null);
-      navigate("/login"); // ✅ Redirect to login after logout
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
-
-  const fetchUser = async () => {
-    try {
-      const { data } = await axios.get(`${BACKEND_URL}/check-auth`, {
-        withCredentials: true,
-      });
+      const data = await api('/auth/check-auth');
       setUser(data);
-    } catch (error) {
-      setUser(null);
-      navigate("/login"); // ✅ Redirect unauthenticated users
+      return data;
+    } catch (err) {
+      if (err.status === 401) setUser(null);
+      else setError(err.message);
+      return null;
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchUser();
   }, []);
-
+  useEffect(() => {
+    refresh();
+    const clear = () => setUser(null);
+    window.addEventListener('bagiya:unauthorized', clear);
+    return () => window.removeEventListener('bagiya:unauthorized', clear);
+  }, [refresh]);
+  const login = async (form) => {
+    const data = await api('/auth/login', { method: 'POST', body: form });
+    setError('');
+    setUser(data.user);
+    if (data.dailyReward?.coins)
+      toast.success('Welcome back! 10 daily-login coins added.');
+  };
+  const logout = async () => {
+    await api('/auth/logout', { method: 'POST', body: {} });
+    setError('');
+    setUser(null);
+  };
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, setUser, loading, error, refresh, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-};
+}
+export const useAuth = () => useContext(AuthContext);

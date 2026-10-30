@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Bagiya — Strict Focus",
+  "description": "Keep focus sessions within your allowed websites. Interrupt sessions when monitoring stops.",
+  "version": "1.0.0",
+  "minimum_chrome_version": "120",
+  "permissions": ["tabs", "storage", "alarms", "idle", "scripting"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Bagiya Strict Focus"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

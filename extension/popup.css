@@ -1,0 +1,51 @@
+body {
+  width: 330px;
+  margin: 0;
+  background: #f8f9ef;
+  color: #254432;
+  font:
+    14px/1.6 system-ui,
+    sans-serif;
+}
+main {
+  padding: 24px;
+}
+h1 {
+  font:
+    27px/1.2 Georgia,
+    serif;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+label {
+  display: block;
+  margin-bottom: 6px;
+}
+input,
+button {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #c9d2bc;
+  border-radius: 8px;
+  padding: 11px;
+  font: inherit;
+}
+button {
+  margin-top: 12px;
+  background: #315a42;
+  color: white;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.note {
+  font-size: 11px;
+  color: #69755d;
+}
+#error {
+  color: #9c4232;
+}
